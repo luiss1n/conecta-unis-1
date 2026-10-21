@@ -1,0 +1,268 @@
+@import "tailwindcss" source(none);
+@source "../src";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --font-sans: "Manrope", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+  --radius-3xl: calc(var(--radius) + 12px);
+  --radius-4xl: calc(var(--radius) + 16px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-surface: var(--surface);
+  --color-footer: var(--footer);
+  --color-footer-foreground: var(--footer-foreground);
+  --color-footer-muted: var(--footer-muted);
+  --color-footer-border: var(--footer-border);
+  --color-footer-accent: var(--footer-accent);
+  --color-hero: var(--hero);
+  --color-hero-foreground: var(--hero-foreground);
+  --color-hero-muted: var(--hero-muted);
+  --color-hero-accent: var(--hero-accent);
+  --color-hero-border: var(--hero-border);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary-soft: var(--primary-soft);
+  --color-brand-purple: var(--brand-purple);
+  --color-brand-purple-soft: var(--brand-purple-soft);
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-warning-soft: var(--warning-soft);
+  --color-warning: var(--warning);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-ring-offset-background: var(--background);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --shadow-card: var(--shadow-card-value);
+  --shadow-card-hover: var(--shadow-card-hover-value);
+}
+
+:root {
+  --radius: 0.75rem;
+  --background: oklch(0.985 0.004 264);
+  --surface: oklch(1 0 0);
+  --foreground: oklch(0.22 0.035 268);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.22 0.035 268);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.22 0.035 268);
+  --primary: oklch(0.52 0.2 262);
+  --primary-foreground: oklch(0.99 0 0);
+  --primary-soft: oklch(0.955 0.03 262);
+  --brand-purple: oklch(0.62 0.18 250);
+  --brand-purple-soft: oklch(0.955 0.03 250);
+  --footer: #0F172A;
+  --footer-foreground: oklch(0.98 0.005 250);
+  --footer-muted: oklch(0.8 0.025 250);
+  --footer-border: oklch(0.35 0.035 260);
+  --footer-accent: oklch(0.78 0.12 250);
+  --hero: #0F172A;
+  --hero-foreground: oklch(0.98 0.005 250);
+  --hero-muted: oklch(0.82 0.025 250);
+  --hero-accent: oklch(0.78 0.12 250);
+  --hero-border: oklch(0.32 0.04 260);
+  --success: oklch(0.55 0.14 155);
+  --success-soft: oklch(0.96 0.04 155);
+  --warning: oklch(0.6 0.14 65);
+  --warning-soft: oklch(0.97 0.045 80);
+  --secondary: oklch(0.96 0.008 264);
+  --secondary-foreground: oklch(0.28 0.04 268);
+  --muted: oklch(0.96 0.008 264);
+  --muted-foreground: oklch(0.5 0.03 264);
+  --accent: oklch(0.955 0.03 262);
+  --accent-foreground: oklch(0.4 0.17 262);
+  --destructive: oklch(0.577 0.215 27);
+  --destructive-foreground: oklch(0.99 0 0);
+  --border: oklch(0.915 0.012 264);
+  --input: oklch(0.89 0.014 264);
+  --ring: oklch(0.52 0.2 262);
+  --chart-1: oklch(0.52 0.2 262);
+  --chart-2: var(--brand-purple);
+  --chart-3: oklch(0.55 0.14 155);
+  --chart-4: oklch(0.6 0.14 65);
+  --chart-5: oklch(0.6 0.18 20);
+  --sidebar: oklch(1 0 0);
+  --sidebar-foreground: oklch(0.22 0.035 268);
+  --sidebar-primary: oklch(0.52 0.2 262);
+  --sidebar-primary-foreground: oklch(0.99 0 0);
+  --sidebar-accent: oklch(0.955 0.03 262);
+  --sidebar-accent-foreground: oklch(0.4 0.17 262);
+  --sidebar-border: oklch(0.915 0.012 264);
+  --sidebar-ring: oklch(0.52 0.2 262);
+  --gradient-brand: linear-gradient(120deg, var(--primary), var(--brand-purple));
+  --shadow-card-value: 0 1px 2px oklch(0.22 0.035 268 / 0.04), 0 2px 8px oklch(0.22 0.035 268 / 0.04);
+  --shadow-card-hover-value: 0 4px 10px oklch(0.22 0.035 268 / 0.06), 0 12px 28px -8px oklch(0.52 0.2 262 / 0.18);
+}
+
+@utility bg-brand-gradient {
+  background-image: var(--gradient-brand);
+}
+
+@utility text-brand-gradient {
+  background-image: var(--gradient-brand);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+@utility container-page {
+  width: 100%;
+  max-width: 80rem;
+  margin-inline: auto;
+  padding-inline: 1rem;
+  @media (width >= 40rem) {
+    padding-inline: 1.5rem;
+  }
+  @media (width >= 64rem) {
+    padding-inline: 2rem;
+  }
+}
+
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
+  html {
+    font-family: var(--font-sans);
+  }
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    -webkit-font-smoothing: antialiased;
+  }
+  h1, h2, h3, h4 {
+    font-family: var(--font-display);
+    letter-spacing: -0.015em;
+  }
+}
+
+/* ==========================================================================
+   ANIMAÇÕES
+   ========================================================================== */
+
+:root {
+  --ease-out-expo: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Rolagem suave ao clicar em âncoras */
+html {
+  scroll-behavior: smooth;
+}
+
+/* ---------- Aparecer ao rolar (usado pelo <Reveal>) ---------- */
+.reveal {
+  opacity: 0;
+  transform: translate3d(0, 28px, 0);
+  transition:
+    opacity var(--reveal-duration, 700ms) var(--ease-out-expo),
+    transform var(--reveal-duration, 700ms) var(--ease-out-expo);
+  transition-delay: var(--reveal-delay, 0ms);
+  will-change: opacity, transform;
+}
+.reveal[data-reveal="down"]  { transform: translate3d(0, -28px, 0); }
+.reveal[data-reveal="left"]  { transform: translate3d(-40px, 0, 0); }
+.reveal[data-reveal="right"] { transform: translate3d(40px, 0, 0); }
+.reveal[data-reveal="scale"] { transform: scale(0.92); }
+.reveal[data-reveal="fade"]  { transform: none; }
+
+.reveal[data-visible="true"] {
+  opacity: 1;
+  transform: none;
+  will-change: auto;
+}
+
+/* ---------- Entrada do herói (carrega sozinho, sem precisar rolar) ---------- */
+@keyframes hero-in {
+  from { opacity: 0; transform: translate3d(0, 24px, 0); }
+  to   { opacity: 1; transform: none; }
+}
+.hero-in {
+  opacity: 0;
+  animation: hero-in 800ms var(--ease-out-expo) forwards;
+  animation-delay: var(--hero-delay, 0ms);
+}
+
+/* ---------- Cards: sobem levemente no hover (usa a sombra do seu tema) ---------- */
+.card-lift {
+  transition:
+    transform 300ms var(--ease-out-expo),
+    box-shadow 300ms var(--ease-out-expo),
+    border-color 300ms ease;
+}
+.card-lift:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-card-hover-value);
+}
+.card-lift:active {
+  transform: translateY(-1px) scale(0.99);
+}
+
+/* ---------- Botões: micro-interação ao clicar ---------- */
+.btn-press {
+  transition: transform 200ms var(--ease-spring), filter 200ms ease;
+}
+.btn-press:hover  { filter: brightness(1.05); }
+.btn-press:active { transform: scale(0.96); }
+
+/* ---------- Barra de progresso de rolagem ---------- */
+.scroll-progress {
+  position: fixed;
+  inset: 0 0 auto 0;
+  height: 3px;
+  z-index: 60;
+  pointer-events: none;
+}
+.scroll-progress__bar {
+  height: 100%;
+  width: 100%;
+  transform-origin: left center;
+  transform: scaleX(0);
+  background-image: var(--gradient-brand);
+}
+
+/* ---------- Acessibilidade: respeita "reduzir movimento" ---------- */
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .reveal,
+  .hero-in {
+    opacity: 1 !important;
+    transform: none !important;
+    animation: none !important;
+    transition: none !important;
+  }
+  .card-lift:hover,
+  .btn-press:active { transform: none; }
+}
