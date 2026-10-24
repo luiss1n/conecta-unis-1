@@ -8,11 +8,12 @@ import { PageHeader } from "@/components/common/PageHeader";
 import { JobList } from "@/components/jobs/JobCard";
 import { SearchBar } from "@/components/jobs/SearchBar";
 import { emptyFilters, filterJobs, modeLabel, scheduleLabel, toggleIn, typeLabel } from "@/lib/jobs";
-import { getCompanyName, getJobs } from "@/services/api";
+import { getJobs } from "@/services/api";
 import type { JobCategory, JobFilters, JobType, Schedule, WorkMode } from "@/types";
 
 export const Route = createFileRoute("/vagas/")({
   validateSearch: z.object({ q: z.string().optional() }),
+  loader: async () => ({ jobs: await getJobs() }),
   head: () => ({
     meta: [
       { title: "Vagas de estágio e emprego — CONECTA UNIS" },
@@ -42,10 +43,10 @@ function CheckGroup<T extends string>({ legend, options, selected, onToggle, lab
 
 function JobsPage() {
   const { q } = Route.useSearch();
-  const all = getJobs();
+  const { jobs: all } = Route.useLoaderData();
   const [f, setF] = useState<JobFilters>({ ...emptyFilters, query: q ?? "" });
   const [showFilters, setShowFilters] = useState(false);
-  const results = useMemo(() => filterJobs(all, f, getCompanyName), [all, f]);
+  const results = useMemo(() => filterJobs(all, f), [all, f]);
   const categories = [...new Set(all.map((j) => j.category))].sort() as JobCategory[];
   const cities = [...new Set(all.map((j) => j.city))].sort();
   const activeCount = f.types.length + f.modes.length + f.schedules.length + f.categories.length + f.cities.length + (f.query ? 1 : 0);

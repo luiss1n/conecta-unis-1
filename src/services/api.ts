@@ -1,30 +1,135 @@
 /**
  * Camada de serviços do CONECTA UNIS.
  *
- * Nesta primeira versão, todas as funções retornam DADOS DEMONSTRATIVOS locais.
- * INTEGRAÇÃO FUTURA: substituir os retornos por chamadas à API REST (NestJS + Prisma/PostgreSQL),
- * por exemplo `fetch(`${API_URL}/vagas`)`. A interface consome apenas estas funções,
- * o que facilita a troca da fonte de dados (e uma eventual migração para Next.js).
- *
- * AUTENTICAÇÃO FUTURA: o perfil do candidato (getCandidateProfile) virá da sessão do usuário.
- * CANDIDATURAS FUTURAS: POST /candidaturas — hoje NÃO há envio nem armazenamento de dados.
+ * Vagas, empresas e eventos são lidos do Supabase (tabelas públicas, protegidas por RLS).
+ * A interface consome apenas estas funções; as regras de quem pode escrever ficam nas policies do banco
+ * (ver drizzle/migrations). `getCandidateProfile` ainda devolve um perfil de demonstração.
  */
-import { companies } from "@/data/companies";
-import { events } from "@/data/events";
-import { jobs } from "@/data/jobs";
 import { demoCandidate } from "@/data/demo";
 import { supabase } from "@/integrations/supabase/client";
+import type { Database } from "@/integrations/supabase/types";
 import { profileSchema, validateProfileFile, type ProfileValues, type ProfileFileKind } from "@/lib/profile";
+import type { CareerEvent, Company, Job, JobCategory } from "@/types";
 
-export const getJobs = () => jobs;
-export const getJob = (slug: string) => jobs.find((j) => j.slug === slug);
-export const getCompanies = () => companies;
-export const getCompany = (slug: string) => companies.find((c) => c.slug === slug);
-export const getCompanyName = (slug: string) => getCompany(slug)?.name ?? "";
-export const getJobsByCompany = (slug: string) => jobs.filter((j) => j.companySlug === slug);
-export const getEvents = () => events;
-export const getEvent = (id: string) => events.find((e) => e.id === id);
+type JobRow = Database["public"]["Tables"]["jobs"]["Row"];
+type CompanyRow = Database["public"]["Tables"]["companies"]["Row"];
+type EventRow = Database["public"]["Tables"]["events"]["Row"];
+
+const TONES: readonly string[] = ["blue", "purple", "green", "amber"];
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function toCompany(r: CompanyRow): Company {
+  return {
+    slug: r.slug,
+    name: r.name,
+    sector: r.sector,
+    city: r.city,
+    summary: r.summary,
+    about: r.about,
+    initials: r.initials || r.name.slice(0, 2).toUpperCase(),
+    tone: TONES.includes(r.tone) ? (r.tone as Company["tone"]) : "blue",
+  };
+}
+
+function toJob(r: JobRow, company?: Company): Job {
+  return {
+    slug: r.slug,
+    title: r.title,
+    companySlug: r.companySlug,
+    publisherName: r.publisher_name,
+    company,
+    type: r.type as Job["type"],
+    mode: r.mode as Job["mode"],
+    schedule: r.schedule as Job["schedule"],
+    category: r.category as JobCategory,
+    city: r.city,
+    summary: r.summary,
+    description: r.description,
+    activities: r.activities,
+    requirements: r.requirements,
+    benefits: r.benefits,
+    ...(r.salary ? { salary: r.salary } : {}),
+    publishedAt: r.publishedAt,
+  };
+}
+
+function toEvent(r: EventRow): CareerEvent {
+  return {
+    id: r.id,
+    title: r.title,
+    date: r.date,
+    endTime: r.endTime,
+    location: r.location,
+    mode: r.mode as CareerEvent["mode"],
+    category: r.category as CareerEvent["category"],
+    summary: r.summary,
+    description: r.description,
+  };
+}
+
+export async function getCompanies(): Promise<Company[]> {
+  const { data, error } = await supabase.from("companies").select("*").order("name");
+  if (error) throw error;
+  return (data ?? []).map(toCompany);
+}
+
+export async function getCompany(slug: string): Promise<Company | undefined> {
+  const { data, error } = await supabase.from("companies").select("*").eq("slug", slug).maybeSingle();
+  if (error) throw error;
+  return data ? toCompany(data) : undefined;
+}
+
+/** Todas as vagas, da mais recente para a mais antiga, já com a empresa resolvida. */
+export async function getJobs(): Promise<Job[]> {
+  const [jobsRes, companies] = await Promise.all([
+    supabase.from("jobs").select("*").order("publishedAt", { ascending: false }),
+    getCompanies(),
+  ]);
+  if (jobsRes.error) throw jobsRes.error;
+  const bySlug = new Map(companies.map((c) => [c.slug, c]));
+  return (jobsRes.data ?? []).map((r) => toJob(r, r.companySlug ? bySlug.get(r.companySlug) : undefined));
+}
+
+export async function getJob(slug: string): Promise<Job | undefined> {
+  const { data, error } = await supabase.from("jobs").select("*").eq("slug", slug).maybeSingle();
+  if (error) throw error;
+  if (!data) return undefined;
+  return toJob(data, data.companySlug ? await getCompany(data.companySlug) : undefined);
+}
+
+export async function getJobsByCompany(slug: string): Promise<Job[]> {
+  const { data, error } = await supabase.from("jobs").select("*").eq("companySlug", slug).order("publishedAt", { ascending: false });
+  if (error) throw error;
+  const company = await getCompany(slug);
+  return (data ?? []).map((r) => toJob(r, company));
+}
+
+/** Eventos em ordem cronológica. Com `upcomingOnly`, só os que ainda não aconteceram. */
+export async function getEvents(opts: { upcomingOnly?: boolean } = {}): Promise<CareerEvent[]> {
+  let q = supabase.from("events").select("*").order("date", { ascending: true });
+  if (opts.upcomingOnly) q = q.gte("date", new Date().toISOString());
+  const { data, error } = await q;
+  if (error) throw error;
+  return (data ?? []).map(toEvent);
+}
+
+export async function getEvent(id: string): Promise<CareerEvent | undefined> {
+  if (!UUID.test(id)) return undefined;
+  const { data, error } = await supabase.from("events").select("*").eq("id", id).maybeSingle();
+  if (error) throw error;
+  return data ? toEvent(data) : undefined;
+}
+
 export const getCandidateProfile = () => demoCandidate;
+
+/** Papel da conta logada (null se deslogado ou sem cadastro). Usado para exibir o menu de admin. */
+export async function getMyRole() {
+  const { data: u } = await supabase.auth.getUser();
+  if (!u.user) return null;
+  const { data, error } = await supabase.from("user_roles").select("role").eq("user_id", u.user.id).maybeSingle();
+  if (error) throw error;
+  return data?.role ?? null;
+}
 
 async function requireUser() {
   const { data, error } = await supabase.auth.getUser();
@@ -103,15 +208,8 @@ export interface NewJobValues {
   salary?: string | undefined;
 }
 
-export async function createJob(values: NewJobValues) {
-  const user = await requireUser();
-  const { data: company, error: companyError } = await supabase
-    .from("companies").select("slug").eq("owner_id", user.id).maybeSingle();
-  if (companyError) throw companyError;
-  if (!company) throw new Error("Cadastre sua empresa antes de publicar vagas.");
-  const { error } = await supabase.from("jobs").insert({
-    owner_id: user.id,
-    companySlug: company.slug,
+function jobPayload(values: NewJobValues) {
+  return {
     title: values.title.trim(),
     type: values.type,
     mode: values.mode,
@@ -124,13 +222,22 @@ export async function createJob(values: NewJobValues) {
     requirements: values.requirements,
     benefits: values.benefits,
     salary: values.salary?.trim() || null,
-  });
+  };
+}
+
+export async function createJob(values: NewJobValues) {
+  const user = await requireUser();
+  const { data: company, error: companyError } = await supabase
+    .from("companies").select("slug").eq("owner_id", user.id).maybeSingle();
+  if (companyError) throw companyError;
+  if (!company) throw new Error("Cadastre sua empresa antes de publicar vagas.");
+  const { error } = await supabase.from("jobs").insert({ owner_id: user.id, companySlug: company.slug, ...jobPayload(values) });
   if (error) throw new Error("Não foi possível publicar a vaga. Verifique os dados e tente novamente.");
 }
 
 export interface NewEventValues {
   title: string;
-  date: string; // ISO date-time
+  date: string; // ISO date-time (UTC)
   endTime: string; // HH:mm
   location: string;
   mode: "Presencial" | "Online";
@@ -139,10 +246,8 @@ export interface NewEventValues {
   description: string;
 }
 
-export async function createEvent(values: NewEventValues) {
-  const user = await requireUser();
-  const { error } = await supabase.from("events").insert({
-    owner_id: user.id,
+function eventPayload(values: NewEventValues) {
+  return {
     title: values.title.trim(),
     date: values.date,
     endTime: values.endTime,
@@ -151,8 +256,61 @@ export async function createEvent(values: NewEventValues) {
     category: values.category,
     summary: values.summary.trim(),
     description: values.description.trim(),
-  });
+  };
+}
+
+export async function createEvent(values: NewEventValues) {
+  const user = await requireUser();
+  const { error } = await supabase.from("events").insert({ owner_id: user.id, ...eventPayload(values) });
   if (error) throw new Error("Não foi possível publicar o evento. Verifique os dados e tente novamente.");
+}
+
+// ---------------------------------------------------------------------------------------------
+// Administração. A autorização real está nas policies `jobs_admin_all` / `events_admin_all`
+// (migração 0004); estas funções só montam as consultas e traduzem os erros.
+// ---------------------------------------------------------------------------------------------
+
+export interface AdminJobValues extends NewJobValues {
+  /** Empresa cadastrada (opcional). Sem empresa, `publisherName` é obrigatório. */
+  companySlug: string | null;
+  publisherName: string | null;
+}
+
+/** Cria (sem `slug`) ou atualiza (com `slug`) uma vaga como administrador. */
+export async function saveJobAsAdmin(values: AdminJobValues, slug?: string) {
+  const user = await requireUser();
+  const publisher = values.companySlug ? null : values.publisherName?.trim() || null;
+  if (!values.companySlug && !publisher) throw new Error("Escolha uma empresa ou informe quem está publicando a vaga.");
+  const payload = { ...jobPayload(values), companySlug: values.companySlug, publisher_name: publisher };
+  if (slug) {
+    const { error } = await supabase.from("jobs").update(payload).eq("slug", slug).select("slug").single();
+    if (error) throw new Error("Não foi possível salvar a vaga. Verifique os dados e suas permissões.");
+    return;
+  }
+  const { error } = await supabase.from("jobs").insert({ owner_id: user.id, ...payload });
+  if (error) throw new Error("Não foi possível publicar a vaga. Verifique os dados e tente novamente.");
+}
+
+export async function deleteJob(slug: string) {
+  const { data, error } = await supabase.from("jobs").delete().eq("slug", slug).select("slug");
+  if (error || !data?.length) throw new Error("Não foi possível excluir a vaga.");
+}
+
+/** Cria (sem `id`) ou atualiza (com `id`) um evento como administrador. */
+export async function saveEventAsAdmin(values: NewEventValues, id?: string) {
+  const user = await requireUser();
+  if (id) {
+    const { error } = await supabase.from("events").update(eventPayload(values)).eq("id", id).select("id").single();
+    if (error) throw new Error("Não foi possível salvar o evento. Verifique os dados e suas permissões.");
+    return;
+  }
+  const { error } = await supabase.from("events").insert({ owner_id: user.id, ...eventPayload(values) });
+  if (error) throw new Error("Não foi possível publicar o evento. Verifique os dados e tente novamente.");
+}
+
+export async function deleteEvent(id: string) {
+  const { data, error } = await supabase.from("events").delete().eq("id", id).select("id");
+  if (error || !data?.length) throw new Error("Não foi possível excluir o evento.");
 }
 
 export async function removeProfileFile(kind: ProfileFileKind) {

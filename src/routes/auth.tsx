@@ -1,12 +1,12 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useSession } from "@/hooks/use-session";
 import { supabase } from "@/integrations/supabase/client";
-import { lovable } from "@/integrations/lovable";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
@@ -32,6 +32,12 @@ function AuthPage() {
   const [mode, setMode] = useState<Mode>("entrar");
   const [busy, setBusy] = useState(false);
   const [sent, setSent] = useState<string | null>(null);
+  const { session } = useSession();
+
+  // Depois do retorno do Google (ou se já houver sessão), segue para o cadastro.
+  useEffect(() => {
+    if (session) navigate({ to: "/cadastro" });
+  }, [session, navigate]);
 
   async function submit(e: FormEvent<HTMLFormElement>): Promise<void> {
     e.preventDefault();
@@ -69,9 +75,12 @@ function AuthPage() {
   }
 
   async function google(): Promise<void> {
-    const r = await lovable.auth.signInWithOAuth("google", { redirect_uri: `${window.location.origin}/auth` });
-    if (r.error) return void toast.error("Não foi possível entrar com Google.");
-    if (!r.redirected) navigate({ to: "/cadastro" });
+    // Requer o provedor Google habilitado em Supabase > Authentication > Providers.
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: { redirectTo: `${window.location.origin}/auth` },
+    });
+    if (error) toast.error("Não foi possível entrar com Google.");
   }
 
   const title = mode === "entrar" ? "Entrar" : mode === "criar" ? "Criar conta" : "Recuperar senha";

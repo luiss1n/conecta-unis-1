@@ -2,9 +2,10 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { Briefcase, CalendarDays, CheckCircle2 } from "lucide-react";
 import { useState } from "react";
-import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/common/PageHeader";
+import { EventForm } from "@/components/forms/EventForm";
+import { JobForm } from "@/components/forms/JobForm";
 import { createEvent, createJob, getMyProfile } from "@/services/api";
 
 export const Route = createFileRoute("/_authenticated/publicar")({
@@ -16,187 +17,6 @@ export const Route = createFileRoute("/_authenticated/publicar")({
   }),
   component: PublishPage,
 });
-
-const inputCls =
-  "mt-1 h-11 w-full rounded-md border bg-surface px-3 outline-none focus:border-primary focus:ring-4 focus:ring-primary/10";
-const areaCls =
-  "mt-1 w-full rounded-md border bg-surface px-3 py-2 outline-none focus:border-primary focus:ring-4 focus:ring-primary/10";
-
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div>
-      <label className="text-sm font-medium">{label}</label>
-      {children}
-    </div>
-  );
-}
-
-function lines(text: string) {
-  return text.split("\n").map((l) => l.trim()).filter(Boolean);
-}
-
-function JobForm({ onDone }: { onDone: () => void }) {
-  const [saving, setSaving] = useState(false);
-  const [form, setForm] = useState({
-    title: "", type: "estagio", mode: "presencial", schedule: "integral",
-    category: "Tecnologia", city: "", summary: "", description: "",
-    activities: "", requirements: "", benefits: "", salary: "",
-  });
-  const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
-    setForm((f) => ({ ...f, [k]: e.target.value }));
-
-  async function submit(e: React.FormEvent) {
-    e.preventDefault();
-    if (form.title.trim().length < 3) { toast.error("Informe um título com pelo menos 3 caracteres."); return; }
-    if (!form.city.trim() || !form.summary.trim() || !form.description.trim()) {
-      toast.error("Preencha cidade, resumo e descrição."); return;
-    }
-    setSaving(true);
-    try {
-      await createJob({
-        title: form.title, type: form.type as "estagio" | "emprego",
-        mode: form.mode as "presencial" | "hibrido" | "remoto",
-        schedule: form.schedule as "integral" | "meio-periodo",
-        category: form.category, city: form.city, summary: form.summary, description: form.description,
-        activities: lines(form.activities), requirements: lines(form.requirements), benefits: lines(form.benefits),
-        salary: form.salary || undefined,
-      });
-      toast.success("Vaga publicada!");
-      onDone();
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Não foi possível publicar a vaga.");
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  return (
-    <form className="space-y-4" onSubmit={submit} noValidate>
-      <Field label="Título da vaga">
-        <input className={inputCls} value={form.title} onChange={set("title")} placeholder="Ex.: Estagiário de Marketing" />
-      </Field>
-      <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="Tipo">
-          <select className={inputCls} value={form.type} onChange={set("type")}>
-            <option value="estagio">Estágio</option><option value="emprego">Emprego</option>
-          </select>
-        </Field>
-        <Field label="Modalidade">
-          <select className={inputCls} value={form.mode} onChange={set("mode")}>
-            <option value="presencial">Presencial</option><option value="hibrido">Híbrido</option><option value="remoto">Remoto</option>
-          </select>
-        </Field>
-        <Field label="Jornada">
-          <select className={inputCls} value={form.schedule} onChange={set("schedule")}>
-            <option value="integral">Integral</option><option value="meio-periodo">Meio período</option>
-          </select>
-        </Field>
-        <Field label="Área">
-          <select className={inputCls} value={form.category} onChange={set("category")}>
-            {["Administração", "Contabilidade", "Tecnologia", "Saúde", "Direito", "Comércio", "Atendimento"].map((c) => (
-              <option key={c} value={c}>{c}</option>
-            ))}
-          </select>
-        </Field>
-        <Field label="Cidade">
-          <input className={inputCls} value={form.city} onChange={set("city")} placeholder="Ex.: São Lourenço, MG" />
-        </Field>
-        <Field label="Salário / bolsa (opcional)">
-          <input className={inputCls} value={form.salary} onChange={set("salary")} placeholder="Ex.: R$ 1.500" />
-        </Field>
-      </div>
-      <Field label="Resumo">
-        <textarea className={areaCls} rows={2} value={form.summary} onChange={set("summary")} placeholder="Uma frase sobre a oportunidade" />
-      </Field>
-      <Field label="Descrição completa">
-        <textarea className={areaCls} rows={4} value={form.description} onChange={set("description")} />
-      </Field>
-      <Field label="Atividades (uma por linha)">
-        <textarea className={areaCls} rows={3} value={form.activities} onChange={set("activities")} />
-      </Field>
-      <Field label="Requisitos (um por linha)">
-        <textarea className={areaCls} rows={3} value={form.requirements} onChange={set("requirements")} />
-      </Field>
-      <Field label="Benefícios (um por linha)">
-        <textarea className={areaCls} rows={3} value={form.benefits} onChange={set("benefits")} />
-      </Field>
-      <Button type="submit" size="lg" className="w-full" disabled={saving}>
-        {saving ? "Publicando…" : "Publicar vaga"}
-      </Button>
-    </form>
-  );
-}
-
-function EventForm({ onDone }: { onDone: () => void }) {
-  const [saving, setSaving] = useState(false);
-  const [form, setForm] = useState({
-    title: "", date: "", endTime: "", location: "", mode: "Presencial",
-    category: "Workshop", summary: "", description: "",
-  });
-  const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
-    setForm((f) => ({ ...f, [k]: e.target.value }));
-
-  async function submit(e: React.FormEvent) {
-    e.preventDefault();
-    if (form.title.trim().length < 3) { toast.error("Informe um título com pelo menos 3 caracteres."); return; }
-    if (!form.date || !form.endTime || !form.location.trim() || !form.summary.trim()) {
-      toast.error("Preencha data, horário, local e resumo."); return;
-    }
-    setSaving(true);
-    try {
-      await createEvent({
-        title: form.title, date: new Date(form.date).toISOString(), endTime: form.endTime,
-        location: form.location, mode: form.mode as "Presencial" | "Online",
-        category: form.category as "Workshop" | "Feira" | "Palestra" | "Oficina",
-        summary: form.summary, description: form.description,
-      });
-      toast.success("Evento publicado!");
-      onDone();
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Não foi possível publicar o evento.");
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  return (
-    <form className="space-y-4" onSubmit={submit} noValidate>
-      <Field label="Título do evento">
-        <input className={inputCls} value={form.title} onChange={set("title")} placeholder="Ex.: Workshop de Currículo" />
-      </Field>
-      <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="Data e hora de início">
-          <input type="datetime-local" className={inputCls} value={form.date} onChange={set("date")} />
-        </Field>
-        <Field label="Horário de término">
-          <input type="time" className={inputCls} value={form.endTime} onChange={set("endTime")} />
-        </Field>
-        <Field label="Modalidade">
-          <select className={inputCls} value={form.mode} onChange={set("mode")}>
-            <option value="Presencial">Presencial</option><option value="Online">Online</option>
-          </select>
-        </Field>
-        <Field label="Categoria">
-          <select className={inputCls} value={form.category} onChange={set("category")}>
-            {["Workshop", "Feira", "Palestra", "Oficina"].map((c) => <option key={c} value={c}>{c}</option>)}
-          </select>
-        </Field>
-      </div>
-      <Field label="Local">
-        <input className={inputCls} value={form.location} onChange={set("location")} placeholder="Ex.: Auditório Central ou link da transmissão" />
-      </Field>
-      <Field label="Resumo">
-        <textarea className={areaCls} rows={2} value={form.summary} onChange={set("summary")} />
-      </Field>
-      <Field label="Descrição completa">
-        <textarea className={areaCls} rows={4} value={form.description} onChange={set("description")} />
-      </Field>
-      <Button type="submit" size="lg" className="w-full" disabled={saving}>
-        {saving ? "Publicando…" : "Publicar evento"}
-      </Button>
-    </form>
-  );
-}
 
 function PublishPage() {
   const { data, isLoading } = useQuery({ queryKey: ["my-profile"], queryFn: getMyProfile });
@@ -214,6 +34,17 @@ function PublishPage() {
         <PageHeader eyebrow="Publicar" title="Complete seu cadastro para publicar" description="Apenas contas de empresa podem publicar vagas, e contas de professor podem publicar eventos." />
         <div className="container-page py-10">
           <Button asChild size="lg"><Link to="/cadastro">Completar cadastro</Link></Button>
+        </div>
+      </>
+    );
+  }
+
+  if (role === "admin") {
+    return (
+      <>
+        <PageHeader eyebrow="Publicar" title="Use o painel do administrador" description="Como administrador, você cria e gerencia vagas e eventos pelo painel." />
+        <div className="container-page py-10">
+          <Button asChild size="lg"><Link to="/admin">Ir para o painel</Link></Button>
         </div>
       </>
     );
@@ -254,7 +85,11 @@ function PublishPage() {
                 </p>
               </div>
             </div>
-            {isCompany ? <JobForm onDone={() => setDone(true)} /> : <EventForm onDone={() => setDone(true)} />}
+            {isCompany ? (
+              <JobForm submitLabel="Publicar vaga" savingLabel="Publicando…" successMessage="Vaga publicada!" onSubmit={createJob} onDone={() => setDone(true)} />
+            ) : (
+              <EventForm submitLabel="Publicar evento" savingLabel="Publicando…" successMessage="Evento publicado!" onSubmit={createEvent} onDone={() => setDone(true)} />
+            )}
           </section>
         )}
       </div>

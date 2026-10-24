@@ -15,7 +15,7 @@ export const profileSchema = z.object({
 
 export type ProfileValues = z.infer<typeof profileSchema>;
 export const profileKinds = ["company", "visitor", "professor"] as const;
-export const profileKindLabels = { company: "Empresa", visitor: "Visitante", professor: "Professor" };
+export const profileKindLabels = { company: "Empresa", visitor: "Visitante", professor: "Professor", admin: "Administrador" };
 export type ProfileFileKind = "avatar" | "banner" | "resume";
 
 export function validateProfileFile(file: Pick<File, "type" | "size">, kind: ProfileFileKind) {

@@ -1,16 +1,15 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { ChevronRight, MapPin } from "lucide-react";
 import { CompanyAvatar } from "@/components/common/CompanyAvatar";
-import { DemoBadge } from "@/components/common/DemoBadge";
 import { EmptyState } from "@/components/common/EmptyState";
 import { JobList } from "@/components/jobs/JobCard";
 import { getCompany, getJobsByCompany } from "@/services/api";
 
 export const Route = createFileRoute("/empresas/$slug")({
-  loader: ({ params }) => {
-    const company = getCompany(params.slug);
+  loader: async ({ params }) => {
+    const company = await getCompany(params.slug);
     if (!company) throw notFound();
-    return { company, jobs: getJobsByCompany(company.slug) };
+    return { company, jobs: await getJobsByCompany(company.slug) };
   },
   head: ({ loaderData }) => {
     if (!loaderData) return { meta: [{ title: "Empresa não encontrada — CONECTA UNIS" }, { name: "robots", content: "noindex" }] };
@@ -44,7 +43,6 @@ function CompanyPage() {
               {company.sector} <span className="inline-flex items-center gap-1"><MapPin className="h-4 w-4" />{company.city}</span>
             </p>
           </div>
-          <div className="sm:ml-auto"><DemoBadge>Empresa fictícia</DemoBadge></div>
         </div>
         <p className="mt-6 max-w-3xl leading-relaxed text-muted-foreground">{company.about}</p>
       </header>

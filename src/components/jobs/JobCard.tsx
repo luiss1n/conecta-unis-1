@@ -2,9 +2,8 @@ import { Link } from "@tanstack/react-router";
 import { CalendarDays, MapPin } from "lucide-react";
 import { motion, useReducedMotion, type Variants } from "framer-motion";
 import { CompanyAvatar } from "@/components/common/CompanyAvatar";
-import { formatDate, modeLabel, typeLabel } from "@/lib/jobs";
+import { formatDate, jobPublisher, modeLabel, typeLabel } from "@/lib/jobs";
 import { cn } from "@/lib/utils";
-import { getCompany } from "@/services/api";
 import type { Job } from "@/types";
 
 export function JobTypeBadge({ type }: { type: Job["type"] }) {
@@ -21,7 +20,6 @@ export function JobTypeBadge({ type }: { type: Job["type"] }) {
 }
 
 export function JobCard({ job }: { job: Job }) {
-  const company = getCompany(job.companySlug);
   return (
     <Link
       to="/vagas/$slug"
@@ -30,8 +28,8 @@ export function JobCard({ job }: { job: Job }) {
     >
       <div className="flex items-start justify-between gap-3">
         <div className="flex min-w-0 items-center gap-3">
-          <CompanyAvatar company={company} />
-          <p className="truncate text-sm font-medium text-muted-foreground">{company?.name}</p>
+          <CompanyAvatar company={job.company} label={jobPublisher(job)} />
+          <p className="truncate text-sm font-medium text-muted-foreground">{jobPublisher(job)}</p>
         </div>
         <JobTypeBadge type={job.type} />
       </div>

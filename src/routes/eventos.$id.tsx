@@ -1,14 +1,13 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { CalendarDays, CheckCircle2, ChevronRight, Clock, MapPin, Tag } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { DemoBadge } from "@/components/common/DemoBadge";
 import { useEventInterest } from "@/components/events/EventCard";
 import { formatEventDate } from "@/lib/jobs";
 import { getEvent } from "@/services/api";
 
 export const Route = createFileRoute("/eventos/$id")({
-  loader: ({ params }) => {
-    const event = getEvent(params.id);
+  loader: async ({ params }) => {
+    const event = await getEvent(params.id);
     if (!event) throw notFound();
     return { event };
   },
@@ -41,7 +40,6 @@ function EventPage() {
       <article className="mt-6 rounded-xl border bg-card p-6 shadow-card sm:p-8">
         <div className="flex flex-wrap items-center gap-2">
           <span className="inline-flex rounded-full bg-brand-purple-soft px-2.5 py-0.5 text-xs font-semibold text-brand-purple">{event.category}</span>
-          <DemoBadge>Evento de exemplo</DemoBadge>
         </div>
         <h1 className="mt-3 text-3xl font-extrabold">{event.title}</h1>
         <ul className="mt-5 grid gap-3 text-sm sm:grid-cols-2">

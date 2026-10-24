@@ -11,10 +11,14 @@ import heroPhoto from "@/assets/hero-photo.jpg.asset.json";
 import { SearchBar } from "@/components/jobs/SearchBar";
 import { FadeUp, Stagger, StaggerItem } from "@/components/motion";
 import { emptyFilters, filterJobs, toggleIn } from "@/lib/jobs";
-import { getCompanyName, getEvents, getJobs } from "@/services/api";
+import { getEvents, getJobs } from "@/services/api";
 import type { JobFilters } from "@/types";
 
 export const Route = createFileRoute("/")({
+  loader: async () => {
+    const [jobs, events] = await Promise.all([getJobs(), getEvents({ upcomingOnly: true })]);
+    return { jobs, events };
+  },
   head: () => ({
     meta: [
       { title: "CONECTA UNIS — Encontre sua oportunidade na região" },
@@ -34,8 +38,8 @@ const heroDelay = (ms: number) => ({ "--hero-delay": `${ms}ms` }) as CSSProperti
 function Home() {
   const [f, setF] = useState<JobFilters>(emptyFilters);
   const [limit, setLimit] = useState(PAGE);
-  const all = getJobs();
-  const results = useMemo(() => filterJobs(all, f, getCompanyName), [all, f]);
+  const { jobs: all, events } = Route.useLoaderData();
+  const results = useMemo(() => filterJobs(all, f), [all, f]);
   const shown = results.slice(0, limit);
 
   const chips = [
@@ -132,13 +136,17 @@ function Home() {
             <h2 id="eventos-title" className="text-xl font-bold">Próximos eventos</h2>
             <Link to="/eventos" className="text-sm font-semibold text-primary hover:underline">Ver todos</Link>
           </FadeUp>
-          <Stagger className="space-y-3">
-            {getEvents().map((e) => (
-              <StaggerItem key={e.id}>
-                <EventCardCompact event={e} />
-              </StaggerItem>
-            ))}
-          </Stagger>
+          {events.length === 0 ? (
+            <EmptyState title="Nenhum evento agendado" description="Quando novos eventos forem publicados, eles aparecerão aqui." />
+          ) : (
+            <Stagger className="space-y-3">
+              {events.slice(0, 4).map((e) => (
+                <StaggerItem key={e.id}>
+                  <EventCardCompact event={e} />
+                </StaggerItem>
+              ))}
+            </Stagger>
+          )}
         </aside>
       </div>
 

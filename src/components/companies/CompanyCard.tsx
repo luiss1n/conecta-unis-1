@@ -1,11 +1,9 @@
 import { Link } from "@tanstack/react-router";
 import { Briefcase, MapPin } from "lucide-react";
 import { CompanyAvatar } from "@/components/common/CompanyAvatar";
-import { getJobsByCompany } from "@/services/api";
 import type { Company } from "@/types";
 
-export function CompanyCard({ company }: { company: Company }) {
-  const count = getJobsByCompany(company.slug).length;
+export function CompanyCard({ company, count }: { company: Company; count: number }) {
   return (
     <Link
       to="/empresas/$slug"

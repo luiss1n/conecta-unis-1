@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Building2, GraduationCap, UserRound } from "lucide-react";
 import { useEffect, useState, type FormEvent } from "react";
@@ -60,7 +60,7 @@ async function loadRegistration() {
   ]);
   return {
     email: u.user.email ?? "",
-    role: (r.data?.role ?? null) as Kind | null,
+    role: (r.data?.role ?? null) as Kind | "admin" | null,
     values: { ...p.data, ...cd.data, company_name: co.data?.name, sector: co.data?.sector, ...pd.data } as Record<string, string | undefined>,
   };
 }
@@ -80,9 +80,20 @@ function Registration() {
   const { data, isLoading } = useQuery({ queryKey: ["registration"], queryFn: loadRegistration });
   const [kind, setKind] = useState<Kind | null>(null);
   const [busy, setBusy] = useState(false);
-  useEffect(() => { if (data?.role) setKind(data.role); }, [data?.role]);
+  useEffect(() => { if (data?.role && data.role !== "admin") setKind(data.role); }, [data?.role]);
 
   if (isLoading || !data) return <p className="container-page py-16 text-muted-foreground">Carregando…</p>;
+  if (data.role === "admin") {
+    return (
+      <div className="container-page max-w-3xl py-12">
+        <h1 className="font-display text-3xl font-extrabold">Conta de administrador</h1>
+        <p className="mt-1 text-sm text-muted-foreground">Conta: {data.email}</p>
+        <p className="mt-6 text-muted-foreground">Contas de administrador não precisam de cadastro de empresa ou professor.</p>
+        <Button asChild className="mt-6"><Link to="/admin">Ir para o painel</Link></Button>
+      </div>
+    );
+  }
+
   const d = data.values;
   const locked = !!data.role;
 

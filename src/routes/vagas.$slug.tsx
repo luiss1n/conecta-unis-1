@@ -5,18 +5,18 @@ import { CompanyAvatar } from "@/components/common/CompanyAvatar";
 import { ApplicationConsent } from "@/components/jobs/ApplicationConsent";
 import { CandidateProfileCard } from "@/components/jobs/CandidateProfileCard";
 import { JobTypeBadge } from "@/components/jobs/JobCard";
-import { formatDate, modeLabel, scheduleLabel, typeLabel } from "@/lib/jobs";
-import { getCandidateProfile, getCompany, getJob } from "@/services/api";
+import { formatDate, jobPublisher, modeLabel, scheduleLabel, typeLabel } from "@/lib/jobs";
+import { getCandidateProfile, getJob } from "@/services/api";
 
 export const Route = createFileRoute("/vagas/$slug")({
-  loader: ({ params }) => {
-    const job = getJob(params.slug);
+  loader: async ({ params }) => {
+    const job = await getJob(params.slug);
     if (!job) throw notFound();
-    return { job, company: getCompany(job.companySlug) };
+    return { job };
   },
   head: ({ loaderData }) => {
     if (!loaderData) return { meta: [{ title: "Vaga não encontrada — CONECTA UNIS" }, { name: "robots", content: "noindex" }] };
-    const t = `${loaderData.job.title} — ${loaderData.company?.name} | CONECTA UNIS`;
+    const t = `${loaderData.job.title} — ${jobPublisher(loaderData.job)} | CONECTA UNIS`;
     return {
       meta: [
         { title: t },
@@ -63,7 +63,9 @@ function List({ items }: { items: string[] }) {
 const simulatedMatch = (slug: string) => 62 + (slug.length * 7) % 33;
 
 function JobDetails() {
-  const { job, company } = Route.useLoaderData();
+  const { job } = Route.useLoaderData();
+  const company = job.company;
+  const publisher = jobPublisher(job);
   const meta = [
     { icon: MapPin, label: job.city },
     { icon: Monitor, label: modeLabel[job.mode] },
@@ -84,14 +86,16 @@ function JobDetails() {
 
       <header className="mt-6 rounded-xl border bg-card p-6 shadow-card sm:p-8">
         <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
-          <CompanyAvatar company={company} size="lg" />
+          <CompanyAvatar company={company} label={publisher} size="lg" />
           <div className="min-w-0">
             <JobTypeBadge type={job.type} />
             <h1 className="mt-2 text-2xl font-extrabold sm:text-3xl">{job.title}</h1>
-            {company && (
+            {company ? (
               <Link to="/empresas/$slug" params={{ slug: company.slug }} className="mt-1 inline-block font-medium text-primary hover:underline">
                 {company.name}
               </Link>
+            ) : (
+              <p className="mt-1 font-medium text-primary">{publisher}</p>
             )}
           </div>
         </div>
@@ -122,7 +126,7 @@ function JobDetails() {
         </div>
         <aside className="space-y-6 lg:sticky lg:top-24 lg:self-start">
           <CandidateProfileCard profile={getCandidateProfile()} match={simulatedMatch(job.slug)} />
-          <ApplicationConsent companyName={company?.name ?? "a empresa"} />
+          <ApplicationConsent companyName={publisher} />
         </aside>
       </div>
     </div>

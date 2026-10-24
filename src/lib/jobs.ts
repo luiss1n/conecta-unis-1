@@ -1,5 +1,12 @@
 import type { Job, JobFilters, JobType, Schedule, WorkMode } from "@/types";
 
+export const APP_TIMEZONE = "America/Sao_Paulo";
+export const DEFAULT_PUBLISHER = "Núcleo de Carreira e Empregabilidade";
+
+/** Nome exibido de quem publicou a vaga: empresa > nome livre (admin) > padrão. */
+export const jobPublisher = (j: Pick<Job, "company" | "publisherName">) =>
+  j.company?.name ?? j.publisherName ?? DEFAULT_PUBLISHER;
+
 export const emptyFilters: JobFilters = {
   query: "",
   types: [],
@@ -14,7 +21,7 @@ const normalize = (s: string) =>
   s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 
 /** Filtra vagas: categorias diferentes combinam com E; valores do mesmo grupo com OU. */
-export function filterJobs(list: Job[], f: JobFilters, companyName: (slug: string) => string = () => ""): Job[] {
+export function filterJobs(list: Job[], f: JobFilters): Job[] {
   const terms = normalize(f.query)
     .split(/[\s,]+/)
     .filter(Boolean);
@@ -26,7 +33,7 @@ export function filterJobs(list: Job[], f: JobFilters, companyName: (slug: strin
     if (f.cities.length && !f.cities.includes(j.city)) return false;
     if (terms.length) {
       const hay = normalize(
-        [j.title, j.summary, j.city, j.category, companyName(j.companySlug)].join(" "),
+        [j.title, j.summary, j.city, j.category, jobPublisher(j)].join(" "),
       );
       // Qualquer termo encontrado conta (permite "São Lourenço, Caxambu").
       if (!terms.some((t) => hay.includes(t))) return false;
@@ -56,19 +63,24 @@ export function formatDate(iso: string) {
     day: "2-digit",
     month: "short",
     year: "numeric",
-    timeZone: "UTC",
+    timeZone: APP_TIMEZONE,
   }).format(new Date(iso.length === 10 ? `${iso}T12:00:00Z` : iso));
 }
 
+/**
+ * Datas de eventos vêm do banco como timestamptz (ex.: "2026-11-05T17:00:00+00:00").
+ * Sempre exibidas no fuso de Brasília, para o horário mostrado ser o que o admin digitou.
+ */
 export function formatEventDate(iso: string) {
-  const d = new Date(`${iso}Z`);
-  const day = new Intl.DateTimeFormat("pt-BR", { day: "2-digit", timeZone: "UTC" }).format(d);
-  const month = new Intl.DateTimeFormat("pt-BR", { month: "short", timeZone: "UTC" })
-    .format(d)
-    .replace(".", "");
-  const weekday = new Intl.DateTimeFormat("pt-BR", { weekday: "long", timeZone: "UTC" }).format(d);
-  const time = iso.slice(11, 16);
-  return { day, month, weekday, time };
+  const d = new Date(iso);
+  const part = (o: Intl.DateTimeFormatOptions) =>
+    new Intl.DateTimeFormat("pt-BR", { ...o, timeZone: APP_TIMEZONE }).format(d);
+  return {
+    day: part({ day: "2-digit" }),
+    month: part({ month: "short" }).replace(".", ""),
+    weekday: part({ weekday: "long" }),
+    time: part({ hour: "2-digit", minute: "2-digit", hourCycle: "h23" }),
+  };
 }
 
 export function toggleIn<T>(arr: T[], v: T): T[] {

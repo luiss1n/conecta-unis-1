@@ -8,7 +8,10 @@ const tones: Record<Company["tone"], string> = {
   amber: "bg-warning-soft text-warning",
 };
 
-export function CompanyAvatar({ company, size = "md" }: { company?: Company | undefined; size?: "md" | "lg" }) {
+const initialsOf = (label: string) =>
+  label.trim().split(/\s+/).slice(0, 2).map((w) => w[0]?.toUpperCase() ?? "").join("") || "?";
+
+export function CompanyAvatar({ company, label, size = "md" }: { company?: Company | undefined; label?: string | undefined; size?: "md" | "lg" }) {
   return (
     <span
       aria-hidden
@@ -18,7 +21,7 @@ export function CompanyAvatar({ company, size = "md" }: { company?: Company | un
         tones[company?.tone ?? "blue"],
       )}
     >
-      {company?.initials ?? "?"}
+      {company?.initials ?? (label ? initialsOf(label) : "?")}
     </span>
   );
 }

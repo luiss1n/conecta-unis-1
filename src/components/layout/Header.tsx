@@ -1,6 +1,6 @@
 import { Link, useNavigate } from "@tanstack/react-router";
-import { useQueryClient } from "@tanstack/react-query";
-import { Bell, Building2, Menu, Plus } from "lucide-react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Bell, Building2, Menu, Plus, ShieldCheck } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -8,6 +8,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/co
 import { demoNotifications } from "@/data/demo";
 import { useSession } from "@/hooks/use-session";
 import { supabase } from "@/integrations/supabase/client";
+import { getMyRole } from "@/services/api";
 import logo from "@/assets/conecta-unis-logo.png";
 
 const nav = [
@@ -35,6 +36,8 @@ export function Header() {
   const { session } = useSession();
   const navigate = useNavigate();
   const qc = useQueryClient();
+  const { data: role } = useQuery({ queryKey: ["my-role"], queryFn: getMyRole, enabled: !!session });
+  const isAdmin = role === "admin";
   async function signOut() {
     await qc.cancelQueries();
     qc.clear();
@@ -102,6 +105,9 @@ export function Header() {
           </Button>
           {session ? (
             <>
+              {isAdmin && (
+                <Button asChild size="sm" className="hidden sm:inline-flex"><Link to="/admin"><ShieldCheck className="h-4 w-4" /> Painel admin</Link></Button>
+              )}
               <Button asChild variant="outline" size="sm"><Link to="/perfil">Meu perfil</Link></Button>
               <Button variant="ghost" size="sm" onClick={signOut}>Sair</Button>
             </>
@@ -135,6 +141,11 @@ export function Header() {
                 <Link to={session ? "/perfil" : "/auth"} onClick={() => setOpen(false)} className="rounded-md px-3 py-3 font-medium hover:bg-muted">
                   {session ? "Meu perfil" : "Entrar"}
                 </Link>
+                {isAdmin && (
+                  <Link to="/admin" onClick={() => setOpen(false)} className="rounded-md px-3 py-3 font-medium text-primary hover:bg-muted">
+                    Painel do administrador
+                  </Link>
+                )}
                 <Link to="/area-empresa" onClick={() => setOpen(false)} className="rounded-md px-3 py-3 font-medium hover:bg-muted">
                   Acesso para empresas
                 </Link>

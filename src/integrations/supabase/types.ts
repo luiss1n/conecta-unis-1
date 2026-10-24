@@ -176,11 +176,12 @@ export type Database = {
           benefits: string[]
           category: string
           city: string
-          companySlug: string
+          companySlug: string | null
           description: string
           mode: string
           owner_id: string
           publishedAt: string
+          publisher_name: string | null
           requirements: string[]
           salary: string | null
           schedule: string
@@ -194,11 +195,12 @@ export type Database = {
           benefits?: string[]
           category: string
           city: string
-          companySlug: string
+          companySlug?: string | null
           description: string
           mode: string
           owner_id: string
           publishedAt?: string
+          publisher_name?: string | null
           requirements?: string[]
           salary?: string | null
           schedule: string
@@ -212,11 +214,12 @@ export type Database = {
           benefits?: string[]
           category?: string
           city?: string
-          companySlug?: string
+          companySlug?: string | null
           description?: string
           mode?: string
           owner_id?: string
           publishedAt?: string
+          publisher_name?: string | null
           requirements?: string[]
           salary?: string | null
           schedule?: string
@@ -364,7 +367,7 @@ export type Database = {
       save_registration: { Args: { payload: Json }; Returns: undefined }
     }
     Enums: {
-      app_role: "company" | "professor" | "visitor"
+      app_role: "company" | "professor" | "visitor" | "admin"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -492,7 +495,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["company", "professor", "visitor"],
+      app_role: ["company", "professor", "visitor", "admin"],
     },
   },
 } as const
