@@ -1,84 +1,134 @@
 # CONECTA UNIS
 
-**Conectando estudantes, egressos e empresas às oportunidades do mercado de trabalho.**
+CONECTA UNIS é a plataforma de vagas, empresas e eventos de carreira da Faculdade Unis São Lourenço. A stack atual do projeto é:
 
-O **CONECTA UNIS** é uma plataforma digital idealizada para aproximar estudantes e egressos da Faculdade Unis São Lourenço das oportunidades de estágio, emprego e desenvolvimento profissional.
+- TanStack Start (React 19 + Vite)
+- Supabase (auth + Postgres com RLS)
+- Tailwind 4
+- shadcn/ui
+- Vitest
+- Bun
 
-O projeto busca centralizar vagas, eventos, cursos e ações de empregabilidade em um único ambiente, facilitando o acesso às oportunidades e apoiando a conexão entre a universidade e o mercado de trabalho.
+Este repositório já está migrado para leitura de vagas, empresas e eventos diretamente do Supabase; os dados estáticos antigos foram removidos e a área administrativa passou a operar por policies e rotas do banco.
 
-## Objetivo do projeto
+## Requisitos
 
-Desenvolver uma plataforma web que auxilie o Núcleo de Carreira e Empregabilidade da Faculdade Unis São Lourenço na divulgação de oportunidades, no acompanhamento de candidaturas e na aproximação entre estudantes e empresas parceiras.
+- Bun 1.x
+- Node.js 20+ para ferramentas locais, se necessário
+- Uma conta no Supabase com projeto configurado
 
-A proposta também busca melhorar a organização das informações, facilitar o acompanhamento dos processos seletivos e apoiar a gestão das ações de carreira e empregabilidade.
+## Setup do ambiente
 
-## Funcionalidades
+Crie um arquivo `.env` a partir do template abaixo e preencha com os valores do seu projeto Supabase:
 
-A plataforma está sendo planejada para oferecer:
+```dotenv
+SUPABASE_URL=https://SEU_PROJETO.supabase.co
+SUPABASE_PUBLISHABLE_KEY=seu_publishable_key
+SUPABASE_PROJECT_ID=seu_project_id
+DATABASE_URL=postgresql://postgres:[PASSWORD]@db.SEU_PROJETO.supabase.co:5432/postgres
+VITE_SUPABASE_URL=https://SEU_PROJETO.supabase.co
+VITE_SUPABASE_PUBLISHABLE_KEY=seu_publishable_key
+VITE_SUPABASE_PROJECT_ID=seu_project_id
+```
 
-- **Busca de vagas:** pesquisa e filtragem de oportunidades de estágio e emprego.
-- **Detalhes das vagas:** descrição, atividades, requisitos, benefícios e informações da empresa.
-- **Perfil profissional:** organização de informações acadêmicas, competências e experiências.
-- **Acompanhamento de candidaturas:** consulta ao andamento das inscrições.
-- **Empresas parceiras:** apresentação de empresas e suas oportunidades.
-- **Eventos e cursos:** divulgação de workshops, palestras e atividades de desenvolvimento profissional.
-- **Atendimentos de carreira:** suporte para orientação profissional, revisão de currículo e preparação para entrevistas.
-- **Painel administrativo:** gerenciamento de usuários, empresas, vagas, eventos e indicadores.
-- **Privacidade e segurança:** cuidados com os dados pessoais e com o consentimento dos usuários, conforme a LGPD.
+Importante:
+- Nunca commite `.env`, chaves ou segredos.
+- `SUPABASE_*` e `VITE_SUPABASE_*` são usadas pela aplicação.
+- `DATABASE_URL` é usada pelo Drizzle para migrações e scripts de banco.
 
+## Instalação
 
-## Tecnologias que eu usei
+```bash
+bun install
+```
 
-### Front-end
-- [Next.js](https://nextjs.org/)
-- [React](https://react.dev/)
-- [TypeScript](https://www.typescriptlang.org/)
-- [Tailwind CSS](https://tailwindcss.com/)
+## Rodando em desenvolvimento
 
-### Back-end
-- [NestJS](https://nestjs.com/)
-- [Node.js](https://nodejs.org/)
-- [PostgreSQL](https://www.postgresql.org/)
-- [Prisma ORM](https://www.prisma.io/)
+```bash
+bun run dev
+```
 
-A stack definitiva será consolidada durante o desenvolvimento. A proposta é manter o front-end separado da API, permitindo que ambos evoluam de forma organizada.
+## Build e produção
 
-## Arquitetura planejada
+O build do TanStack Start gera o servidor Nitro em `.output/server/index.mjs`.
 
-O projeto será organizado em duas aplicações principais:
+```bash
+bun run build
+bun run start
+```
 
-- **Front-end:** interface utilizada por estudantes, egressos, empresas e administradores.
-- **Back-end:** API responsável pela autenticação, regras de negócio, processamento das solicitações e comunicação com o banco de dados.
+No Railway, o comando de inicialização deve ser:
 
-O PostgreSQL será utilizado para armazenar os dados da plataforma, enquanto o Prisma auxiliará no acesso e gerenciamento dessas informações.
+```bash
+bun run start
+```
 
-Em uma etapa futura, poderá ser desenvolvido um aplicativo mobile que consuma a mesma API.
+Ou, diretamente:
 
+```bash
+bun .output/server/index.mjs
+```
 
+## Banco de dados e migrações
 
-## Interface do projeto
+As migrações SQL ficam em `drizzle/migrations/` e devem ser aplicadas em ordem cronológica. Para um banco novo ou resetado:
 
-As interfaces são inspiradas em um ambiente acadêmico e profissional, com foco em clareza, facilidade de navegação e acesso rápido às oportunidades.
+1. Crie o projeto e configure as variáveis de ambiente.
+2. Execute os arquivos em ordem:
+   - `drizzle/migrations/0000_real_accounts_and_career_catalog.sql`
+   - `drizzle/migrations/0001_visitor_account_type.sql`
+   - `drizzle/migrations/0002_complete_private_profiles.sql`
+   - `drizzle/migrations/0003_admin_role.sql`
+   - `drizzle/migrations/0004_admin_management.sql`
+3. Se preferir via Drizzle com `DATABASE_URL` configurado, use o comando do cliente do Drizzle para aplicar as migrações do projeto no ambiente adequado.
 
-As primeiras telas previstas incluem:
+No Supabase, a forma mais segura é rodar cada arquivo no SQL Editor do projeto, na ordem acima, e confirmar que as policies e bucket do admin foram criadas.
 
-- Página inicial com vagas disponíveis e próximos eventos.
-- Listagem e filtros de oportunidades.
-- Página de detalhes da vaga e candidatura.
-- Página de empresas parceiras.
-- Página de eventos.
-- Página institucional sobre a plataforma.
+## Tornar um usuário administrador
 
-## Privacidade e segurança
+Existe um script pronto em `supabase/promote-admin.sql`.
 
-O desenvolvimento deverá considerar a Lei Geral de Proteção de Dados Pessoais (LGPD), incluindo o tratamento adequado dos dados pessoais, o controle de acesso às informações e a transparência sobre o compartilhamento de dados com empresas.
+Abra o SQL Editor do Supabase e execute:
 
-As medidas definitivas de segurança serão implementadas e validadas conforme as funcionalidades forem desenvolvidas.
+```sql
+INSERT INTO public.user_roles (user_id, role)
+SELECT id, 'admin' FROM auth.users WHERE email = 'seu-email@exemplo.com'
+ON CONFLICT (user_id) DO UPDATE SET role = 'admin';
+```
 
-## Contexto acadêmico
+Para remover o acesso depois:
 
-O CONECTA UNIS é um projeto de desenvolvimento de software relacionado à área de Análise e Desenvolvimento de Sistemas, com foco em empregabilidade, integração universidade-empresa e soluções digitais para a comunidade acadêmica.
+```sql
+DELETE FROM public.user_roles
+WHERE user_id = (
+  SELECT id FROM auth.users WHERE email = 'seu-email@exemplo.com'
+);
+```
 
----
+## Estrutura importante
 
-**CONECTA UNIS** — aproximando talentos e oportunidades.
+- `src/services/api.ts` — camada de acesso ao Supabase
+- `src/routes/_authenticated/admin.tsx` — painel administrativo
+- `src/components/forms/` — formulários de vagas e eventos
+- `src/integrations/supabase/` — cliente e tipos do Supabase
+- `drizzle/migrations/` — migrações SQL do banco
+- `supabase/promote-admin.sql` — promoção de conta admin
+
+## Observações
+
+- A stack antiga de Next.js/NestJS/Prisma foi removida do projeto e não deve ser reintroduzida.
+- Não são aceitos arquivos `.env` no repositório.
+- Os arquivos estáticos de dados (`src/data/jobs.ts`, `src/data/companies.ts`, `src/data/events.ts`) não devem retornar ao projeto.
+- A dependência `@lovable.dev` também não deve ser reinstalada.
+
+## Comandos úteis
+
+```bash
+bun install
+bun run dev
+bunx tsc --noEmit
+bun run lint
+bun run test
+bun run build
+bun run start
+```
