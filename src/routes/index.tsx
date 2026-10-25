@@ -7,7 +7,6 @@ import { StatsCards } from "@/components/common/StatsCards";
 import { EventCardCompact } from "@/components/events/EventCard";
 import { FilterChips } from "@/components/jobs/FilterChips";
 import { JobList } from "@/components/jobs/JobCard";
-import heroPhoto from "@/assets/hero-photo.jpg.asset.json";
 import { SearchBar } from "@/components/jobs/SearchBar";
 import { FadeUp, Stagger, StaggerItem } from "@/components/motion";
 import { emptyFilters, filterJobs, toggleIn } from "@/lib/jobs";
@@ -63,11 +62,19 @@ function Home() {
     <>
       <section className="relative overflow-hidden border-b border-hero-border bg-hero text-hero-foreground">
         <img
-          src={heroPhoto.url}
+          src="/hero-bg-1920.webp"
+          srcSet="/hero-bg-960.webp 960w, /hero-bg-1920.webp 1920w"
+          sizes="100vw"
           alt=""
           aria-hidden="true"
-          className="hero-in pointer-events-none absolute inset-y-0 right-0 h-full w-full object-cover object-top opacity-50 sm:w-[58%] sm:opacity-100 sm:[mask-image:linear-gradient(to_right,transparent,black_50%)]"
-          style={heroDelay(200)}
+          fetchPriority="high"
+          decoding="async"
+          className="hero-bg-in pointer-events-none absolute inset-0 h-full w-full object-cover"
+        />
+        {/* Escurece o lado do texto para manter a leitura (contraste acima de 7:1). */}
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,rgb(15_23_42/0.88),rgb(15_23_42/0.55)_60%,rgb(15_23_42/0.35))] sm:bg-[linear-gradient(90deg,rgb(15_23_42/0.85),rgb(15_23_42/0.45)_55%,rgb(15_23_42/0.1))]"
         />
         <div className="container-page relative py-12 sm:py-16">
           <div className="max-w-2xl">

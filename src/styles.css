@@ -214,6 +214,15 @@ html {
   animation: hero-in 800ms var(--ease-out-expo) forwards;
   animation-delay: var(--hero-delay, 0ms);
 }
+/* Fundo do herói: só aparece suavemente (sem deslocar, para não expor as bordas). */
+@keyframes hero-bg-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+.hero-bg-in {
+  opacity: 0;
+  animation: hero-bg-in 900ms ease-out forwards;
+}
 
 /* ---------- Cards: sobem levemente no hover (usa a sombra do seu tema) ---------- */
 .card-lift {
@@ -257,7 +266,8 @@ html {
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
   .reveal,
-  .hero-in {
+  .hero-in,
+  .hero-bg-in {
     opacity: 1 !important;
     transform: none !important;
     animation: none !important;
