@@ -73,12 +73,4 @@ As primeiras telas previstas incluem:
 
 O desenvolvimento deverá considerar a Lei Geral de Proteção de Dados Pessoais (LGPD), incluindo o tratamento adequado dos dados pessoais, o controle de acesso às informações e a transparência sobre o compartilhamento de dados com empresas.
 
-As medidas definitivas de segurança serão implementadas e validadas conforme as funcionalidades forem desenvolvidas.
-
-## Contexto acadêmico
-
-O CONECTA UNIS é um projeto de desenvolvimento de software relacionado à área de Análise e Desenvolvimento de Sistemas, com foco em empregabilidade, integração universidade-empresa e soluções digitais para a comunidade acadêmica.
-
----
-
-**CONECTA UNIS** — aproximando talentos e oportunidades.
+As medidas definitivas de segurança serão implementadas e validadas conforme as funcionalidades forem sendo desenvolvidas.
