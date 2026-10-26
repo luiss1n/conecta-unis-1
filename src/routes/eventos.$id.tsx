@@ -51,11 +51,11 @@ function EventPage() {
         <p className="mt-6 leading-relaxed text-muted-foreground">{event.description}</p>
         <div className="mt-8 flex flex-wrap gap-3">
           <Button size="lg" onClick={() => mark(event)} disabled={done}>
-            {done ? (<><CheckCircle2 className="h-4 w-4" /> Interesse demonstrado</>) : "Inscrever-se"}
+            {done ? (<><CheckCircle2 className="h-4 w-4" /> Interesse registrado</>) : "Tenho interesse"}
           </Button>
           <Button asChild size="lg" variant="outline"><Link to="/eventos">Outros eventos</Link></Button>
         </div>
-        {done && <p className="mt-3 text-sm text-muted-foreground" aria-live="polite">Demonstração: nenhuma inscrição foi registrada em servidor.</p>}
+        {done && <p className="mt-3 text-sm text-muted-foreground" aria-live="polite">Seu interesse foi registrado. A inscrição oficial, quando houver, será divulgada pelo organizador.</p>}
       </article>
     </div>
   );

@@ -3,12 +3,11 @@
  *
  * Vagas, empresas e eventos são lidos do Supabase (tabelas públicas, protegidas por RLS).
  * A interface consome apenas estas funções; as regras de quem pode escrever ficam nas policies do banco
- * (ver drizzle/migrations). `getCandidateProfile` ainda devolve um perfil de demonstração.
+ * (ver drizzle/migrations).
  */
-import { demoCandidate } from "@/data/demo";
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
-import { profileSchema, validateProfileFile, type ProfileValues, type ProfileFileKind } from "@/lib/profile";
+import { detectImageExt, profileSchema, validateProfileFile, type ProfileValues, type ProfileFileKind } from "@/lib/profile";
 import type { CareerEvent, Company, Job, JobCategory } from "@/types";
 
 type JobRow = Database["public"]["Tables"]["jobs"]["Row"];
@@ -31,12 +30,16 @@ function toCompany(r: CompanyRow): Company {
   };
 }
 
+const jobImageUrl = (path: string) => supabase.storage.from("job-images").getPublicUrl(path).data.publicUrl;
+
 function toJob(r: JobRow, company?: Company): Job {
   return {
     slug: r.slug,
     title: r.title,
     companySlug: r.companySlug,
     publisherName: r.publisher_name,
+    imagePath: r.image_path,
+    ...(r.image_path ? { imageUrl: jobImageUrl(r.image_path) } : {}),
     company,
     type: r.type as Job["type"],
     mode: r.mode as Job["mode"],
@@ -119,8 +122,6 @@ export async function getEvent(id: string): Promise<CareerEvent | undefined> {
   if (error) throw error;
   return data ? toEvent(data) : undefined;
 }
-
-export const getCandidateProfile = () => demoCandidate;
 
 /** Papel da conta logada (null se deslogado ou sem cadastro). Usado para exibir o menu de admin. */
 export async function getMyRole() {
@@ -206,6 +207,8 @@ export interface NewJobValues {
   requirements: string[];
   benefits: string[];
   salary?: string | undefined;
+  /** Caminho em job-images. undefined = manter a atual; null = remover. */
+  imagePath?: string | null | undefined;
 }
 
 function jobPayload(values: NewJobValues) {
@@ -222,6 +225,8 @@ function jobPayload(values: NewJobValues) {
     requirements: values.requirements,
     benefits: values.benefits,
     salary: values.salary?.trim() || null,
+    // undefined = não mexer na imagem; null = remover; texto = nova imagem.
+    ...(values.imagePath !== undefined ? { image_path: values.imagePath } : {}),
   };
 }
 
@@ -323,4 +328,41 @@ export async function removeProfileFile(kind: ProfileFileKind) {
   if (error) throw error;
   const path = data?.[column];
   if (path) await supabase.storage.from("profile-photos").remove([path]);
+}
+
+/** Ids dos eventos em que a conta logada marcou interesse (tabela event_interests, protegida por RLS). */
+export async function getMyEventInterests(): Promise<string[]> {
+  const { data: u } = await supabase.auth.getUser();
+  if (!u.user) return [];
+  const { data, error } = await supabase.from("event_interests").select("event_id").eq("user_id", u.user.id);
+  if (error) throw error;
+  return (data ?? []).map((r) => r.event_id);
+}
+
+export async function addEventInterest(eventId: string) {
+  const user = await requireUser();
+  const { error } = await supabase.from("event_interests").insert({ user_id: user.id, event_id: eventId });
+  // 23505 = já existia (chave primária user_id+event_id): o resultado desejado já vale.
+  if (error && error.code !== "23505") throw new Error("Não foi possível registrar seu interesse.");
+}
+
+async function sniffImageExt(file: File) {
+  return detectImageExt(new Uint8Array(await file.slice(0, 12).arrayBuffer()));
+}
+
+/** Envia a imagem da vaga ao bucket público job-images (pasta do usuário) e devolve o caminho salvo. */
+export async function uploadJobImage(file: File): Promise<string> {
+  validateProfileFile(file, "avatar");
+  const user = await requireUser();
+  const ext = await sniffImageExt(file);
+  if (!ext) throw new Error("O conteúdo do arquivo não corresponde a uma imagem JPG, PNG ou WebP.");
+  const path = `${user.id}/${crypto.randomUUID()}.${ext}`;
+  const { error } = await supabase.storage.from("job-images").upload(path, file, { contentType: file.type });
+  if (error) throw new Error("Não foi possível enviar a imagem. Tente novamente.");
+  return path;
+}
+
+/** Apaga uma imagem antiga (melhor esforço: falhar aqui não deve impedir o salvamento da vaga). */
+export async function removeJobImage(path: string) {
+  await supabase.storage.from("job-images").remove([path]);
 }

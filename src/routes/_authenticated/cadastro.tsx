@@ -118,7 +118,7 @@ function Registration() {
       <p className="mt-1 text-sm text-muted-foreground">Conta: {data.email}</p>
 
       <div className="mt-8 grid gap-3 sm:grid-cols-3">
-        {([["company", "Sou empresa", "Empresa", Building2], ["visitor", "Sou visitante", "Perfil pessoal", UserRound], ["professor", "Sou professor", "Perfil acadêmico", GraduationCap]] as const).map(([k, t, s, Icon]) => (
+        {([["company", "Sou empresa", "Empresa", Building2], ["visitor", "Sou estudante ou egresso", "Perfil pessoal", UserRound], ["professor", "Sou professor", "Perfil acadêmico", GraduationCap]] as const).map(([k, t, s, Icon]) => (
           <Button variant="outline"
             key={k}
             type="button"

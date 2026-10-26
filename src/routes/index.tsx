@@ -10,13 +10,13 @@ import { JobList } from "@/components/jobs/JobCard";
 import { SearchBar } from "@/components/jobs/SearchBar";
 import { FadeUp, Stagger, StaggerItem } from "@/components/motion";
 import { emptyFilters, filterJobs, toggleIn } from "@/lib/jobs";
-import { getEvents, getJobs } from "@/services/api";
+import { getCompanies, getEvents, getJobs } from "@/services/api";
 import type { JobFilters } from "@/types";
 
 export const Route = createFileRoute("/")({
   loader: async () => {
-    const [jobs, events] = await Promise.all([getJobs(), getEvents({ upcomingOnly: true })]);
-    return { jobs, events };
+    const [jobs, events, companies] = await Promise.all([getJobs(), getEvents({ upcomingOnly: true }), getCompanies()]);
+    return { jobs, events, companies };
   },
   head: () => ({
     meta: [
@@ -37,7 +37,7 @@ const heroDelay = (ms: number) => ({ "--hero-delay": `${ms}ms` }) as CSSProperti
 function Home() {
   const [f, setF] = useState<JobFilters>(emptyFilters);
   const [limit, setLimit] = useState(PAGE);
-  const { jobs: all, events } = Route.useLoaderData();
+  const { jobs: all, events, companies } = Route.useLoaderData();
   const results = useMemo(() => filterJobs(all, f), [all, f]);
   const shown = results.slice(0, limit);
 
@@ -159,7 +159,7 @@ function Home() {
 
       <div className="container-page">
         <FadeUp>
-          <StatsCards />
+          <StatsCards jobs={all.length} companies={companies.length} events={events.length} />
         </FadeUp>
       </div>
     </>

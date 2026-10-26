@@ -27,7 +27,6 @@ export function Footer() {
         <nav aria-label="Institucional">
           <p className="mb-3 text-sm font-semibold">Institucional</p>
           <ul className="space-y-2 text-sm text-footer-muted">
-            <li><Link to="/area-empresa" className="hover:text-footer-accent">Área para empresas</Link></li>
             <li><Link to="/privacidade" className="hover:text-footer-accent">Política de privacidade</Link></li>
             <li><Link to="/auth" className="hover:text-footer-accent">Criar conta</Link></li>
           </ul>

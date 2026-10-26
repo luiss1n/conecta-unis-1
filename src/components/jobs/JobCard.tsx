@@ -28,7 +28,7 @@ export function JobCard({ job }: { job: Job }) {
     >
       <div className="flex items-start justify-between gap-3">
         <div className="flex min-w-0 items-center gap-3">
-          <CompanyAvatar company={job.company} label={jobPublisher(job)} />
+          <CompanyAvatar company={job.company} label={jobPublisher(job)} imageUrl={job.imageUrl} />
           <p className="truncate text-sm font-medium text-muted-foreground">{jobPublisher(job)}</p>
         </div>
         <JobTypeBadge type={job.type} />

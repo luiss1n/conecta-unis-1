@@ -36,6 +36,20 @@
       "when": 1792162609736,
       "tag": "0004_admin_management",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1792162669736,
+      "tag": "0005_signup_account_type",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1792162729736,
+      "tag": "0006_job_images",
+      "breakpoints": true
     }
   ]
 }

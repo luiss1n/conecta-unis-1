@@ -20,6 +20,10 @@ export interface Job {
   companySlug: string | null;
   /** Nome do publicador quando não há empresa (ex.: Núcleo de Carreira). */
   publisherName?: string | null | undefined;
+  /** Caminho da imagem da vaga no bucket público job-images (para edição). */
+  imagePath?: string | null | undefined;
+  /** URL pública da imagem (logo/foto da empresa) já resolvida pelo serviço. */
+  imageUrl?: string | undefined;
   /** Empresa resolvida pelo serviço (não vem da tabela jobs). */
   company?: Company | undefined;
   type: JobType;
@@ -59,13 +63,6 @@ export interface CareerEvent {
   category: EventCategory;
   summary: string;
   description: string;
-}
-
-export interface CandidateProfile {
-  name: string;
-  course: string;
-  period: string;
-  skills: string[];
 }
 
 export interface JobFilters {
