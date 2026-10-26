@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { profileKinds, profileSchema, validateProfileFile } from "./profile";
+import { accountTypeOptions, detectImageExt, profileCompleteness, profileKinds, profileSchema, validateProfileFile } from "./profile";
 
 describe("Complete profiles", () => {
   it("supports company, visitor and professor accounts", () => {
@@ -17,5 +17,30 @@ describe("Complete profiles", () => {
   it("rejects images larger than the private storage limit", () => {
     expect(() => validateProfileFile({ type: "image/png", size: 2 * 1024 * 1024 }, "avatar")).not.toThrow();
     expect(() => validateProfileFile({ type: "image/png", size: 2 * 1024 * 1024 + 1 }, "banner")).toThrow();
+  });
+});
+
+describe("Perfil real e tipo de conta", () => {
+  it("o cadastro oferece estudante, empresa e professor, e nunca administrador", () => {
+    const values = accountTypeOptions.map((o) => o.value);
+    expect(values).toEqual(["visitor", "company", "professor"]);
+    expect(values).not.toContain("admin");
+    expect(values.every((v) => (profileKinds as readonly string[]).includes(v))).toBe(true);
+  });
+  it("calcula o quanto do perfil está preenchido e o que falta", () => {
+    const empty = profileCompleteness({});
+    expect(empty.percent).toBe(0);
+    expect(empty.missing).toHaveLength(9);
+    const full = profileCompleteness({ display_name: "A", headline: "B", city: "C", education: "D", institution: "E", phone: "F", bio: "G", avatar_path: "h.png", resume_path: "i.pdf" });
+    expect(full).toEqual({ percent: 100, missing: [] });
+    const partial = profileCompleteness({ display_name: "Ana", city: "São Lourenço", resume_path: "  " });
+    expect(partial.percent).toBe(22);
+    expect(partial.missing).toContain("Currículo");
+  });
+  it("reconhece imagens pelo conteúdo e recusa o resto", () => {
+    expect(detectImageExt(Uint8Array.from([137, 80, 78, 71, 13, 10, 26, 10]))).toBe("png");
+    expect(detectImageExt(Uint8Array.from([255, 216, 255, 224]))).toBe("jpg");
+    expect(detectImageExt(Uint8Array.from([82, 73, 70, 70, 0, 0, 0, 0, 87, 69, 66, 80]))).toBe("webp");
+    expect(detectImageExt(Uint8Array.from([60, 115, 118, 103]))).toBeNull(); // "<svg"
   });
 });

@@ -2,11 +2,11 @@ import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { Briefcase, CalendarDays, CheckCircle2, ChevronRight, Clock, Gift, MapPin, Monitor } from "lucide-react";
 import type { ReactNode } from "react";
 import { CompanyAvatar } from "@/components/common/CompanyAvatar";
-import { ApplicationConsent } from "@/components/jobs/ApplicationConsent";
-import { CandidateProfileCard } from "@/components/jobs/CandidateProfileCard";
+import { ApplicationNotice } from "@/components/jobs/ApplicationNotice";
 import { JobTypeBadge } from "@/components/jobs/JobCard";
-import { formatDate, jobPublisher, modeLabel, scheduleLabel, typeLabel } from "@/lib/jobs";
-import { getCandidateProfile, getJob } from "@/services/api";
+import { ProfileSummaryCard } from "@/components/jobs/ProfileSummaryCard";
+import { formatDate, formatSalary, jobPublisher, modeLabel, scheduleLabel, typeLabel } from "@/lib/jobs";
+import { getJob } from "@/services/api";
 
 export const Route = createFileRoute("/vagas/$slug")({
   loader: async ({ params }) => {
@@ -59,9 +59,6 @@ function List({ items }: { items: string[] }) {
   );
 }
 
-// Simulação visual simples e estável por vaga — NÃO é um algoritmo de seleção.
-const simulatedMatch = (slug: string) => 62 + (slug.length * 7) % 33;
-
 function JobDetails() {
   const { job } = Route.useLoaderData();
   const company = job.company;
@@ -86,7 +83,7 @@ function JobDetails() {
 
       <header className="mt-6 rounded-xl border bg-card p-6 shadow-card sm:p-8">
         <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
-          <CompanyAvatar company={company} label={publisher} size="lg" />
+          <CompanyAvatar company={company} label={publisher} imageUrl={job.imageUrl} size="lg" />
           <div className="min-w-0">
             <JobTypeBadge type={job.type} />
             <h1 className="mt-2 text-2xl font-extrabold sm:text-3xl">{job.title}</h1>
@@ -110,10 +107,10 @@ function JobDetails() {
         <div className="space-y-6">
           <Section title="Descrição da vaga">
             <p className="text-sm leading-relaxed text-muted-foreground">{job.description}</p>
-            {job.salary && <p className="mt-3 text-sm"><strong>Remuneração:</strong> {job.salary}</p>}
+            {job.salary && <p className="mt-3 text-sm"><strong>Remuneração:</strong> {formatSalary(job.salary)}</p>}
           </Section>
-          <Section title="Atividades principais"><List items={job.activities} /></Section>
-          <Section title="Requisitos"><List items={job.requirements} /></Section>
+          {job.activities.length > 0 && <Section title="Atividades principais"><List items={job.activities} /></Section>}
+          {job.requirements.length > 0 && <Section title="Requisitos"><List items={job.requirements} /></Section>}
           {job.benefits.length > 0 && (
             <Section title="Benefícios">
               <ul className="flex flex-wrap gap-2">
@@ -125,8 +122,8 @@ function JobDetails() {
           )}
         </div>
         <aside className="space-y-6 lg:sticky lg:top-24 lg:self-start">
-          <CandidateProfileCard profile={getCandidateProfile()} match={simulatedMatch(job.slug)} />
-          <ApplicationConsent companyName={publisher} />
+          <ProfileSummaryCard />
+          <ApplicationNotice publisher={publisher} />
         </aside>
       </div>
     </div>

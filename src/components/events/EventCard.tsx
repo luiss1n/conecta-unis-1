@@ -1,9 +1,11 @@
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { CheckCircle2, Clock, MapPin, Video } from "lucide-react";
-import { useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { useSession } from "@/hooks/use-session";
 import { formatEventDate } from "@/lib/jobs";
+import { addEventInterest, getMyEventInterests } from "@/services/api";
 import type { CareerEvent } from "@/types";
 
 function DateBlock({ iso }: { iso: string }) {
@@ -37,13 +39,29 @@ export function EventCardCompact({ event }: { event: CareerEvent }) {
   );
 }
 
+/** Interesse em eventos gravado no banco para a conta logada; sem login, leva à tela de entrada. */
 export function useEventInterest() {
-  const [interested, setInterested] = useState<string[]>([]);
-  const mark = (e: CareerEvent) => {
-    setInterested((p) => (p.includes(e.id) ? p : [...p, e.id]));
-    toast.success("Interesse registrado (demonstração)", {
-      description: `${e.title} — nenhuma inscrição foi enviada a um servidor.`,
-    });
+  const { session } = useSession();
+  const navigate = useNavigate();
+  const qc = useQueryClient();
+  const { data: interested = [] } = useQuery({
+    queryKey: ["event-interests", session?.user.id],
+    queryFn: getMyEventInterests,
+    enabled: !!session,
+  });
+  const mark = async (e: CareerEvent) => {
+    if (!session) {
+      toast.info("Entre na sua conta para registrar interesse.");
+      navigate({ to: "/auth" });
+      return;
+    }
+    try {
+      await addEventInterest(e.id);
+      await qc.invalidateQueries({ queryKey: ["event-interests"] });
+      toast.success("Interesse registrado", { description: e.title });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Não foi possível registrar seu interesse.");
+    }
   };
   return { interested, mark };
 }
@@ -71,7 +89,7 @@ export function EventCard({ event, interested, onInterest }: { event: CareerEven
           <Link to="/eventos/$id" params={{ id: event.id }}>Ver detalhes</Link>
         </Button>
         <Button onClick={onInterest} disabled={interested} variant={interested ? "secondary" : "default"}>
-          {interested ? (<><CheckCircle2 className="h-4 w-4" /> Interesse demonstrado</>) : "Demonstrar interesse"}
+          {interested ? (<><CheckCircle2 className="h-4 w-4" /> Interesse registrado</>) : "Tenho interesse"}
         </Button>
       </div>
     </article>

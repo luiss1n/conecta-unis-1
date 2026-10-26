@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { jobs } from "@/test/fixtures/jobs";
-import { DEFAULT_PUBLISHER, emptyFilters, filterJobs, formatDate, formatEventDate, jobPublisher } from "./jobs";
+import { DEFAULT_PUBLISHER, emptyFilters, filterJobs, formatDate, formatEventDate, formatSalary, initialsOf, jobPublisher } from "./jobs";
 
 describe("filterJobs", () => {
   it("combines type and remote filters together", () => {
@@ -43,5 +43,19 @@ describe("formatação de datas (fuso de Brasília)", () => {
   it("não vira o dia para vagas publicadas à noite", () => {
     // 01:30 UTC de 06/11 ainda é 05/11 em Brasília
     expect(formatDate("2026-11-06T01:30:00+00:00")).toContain("05");
+  });
+});
+
+describe("apresentação da vaga", () => {
+  it("iniciais ignoram conectivos", () => {
+    expect(initialsOf("Núcleo de Carreira e Empregabilidade")).toBe("NC");
+    expect(initialsOf("Águas Tech")).toBe("ÁT");
+    expect(initialsOf("   ")).toBe("?");
+  });
+  it("remuneração só numérica vira moeda; texto livre fica como digitado", () => {
+    expect(formatSalary("1500")).toContain("1.500,00");
+    expect(formatSalary("1500,5")).toContain("1.500,50");
+    expect(formatSalary("A combinar")).toBe("A combinar");
+    expect(formatSalary("R$ 1.500 + VT")).toBe("R$ 1.500 + VT");
   });
 });

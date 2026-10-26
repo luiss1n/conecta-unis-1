@@ -3,6 +3,23 @@ import type { Job, JobFilters, JobType, Schedule, WorkMode } from "@/types";
 export const APP_TIMEZONE = "America/Sao_Paulo";
 export const DEFAULT_PUBLISHER = "Núcleo de Carreira e Empregabilidade";
 
+const NAME_STOPWORDS = new Set(["de", "da", "do", "das", "dos", "e"]);
+
+/** Iniciais de um nome, ignorando conectivos ("Núcleo de Carreira" → "NC"). */
+export function initialsOf(label: string) {
+  const words = label.trim().split(/\s+/).filter((w) => w && !NAME_STOPWORDS.has(w.toLowerCase()));
+  return words.slice(0, 2).map((w) => w.charAt(0).toUpperCase()).join("") || "?";
+}
+
+/** Valores só com números viram moeda ("1500" → "R$ 1.500,00"); textos livres ficam como foram digitados. */
+export function formatSalary(value: string) {
+  const t = value.trim();
+  if (/^\d+(?:[.,]\d{1,2})?$/.test(t)) {
+    return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(Number(t.replace(",", ".")));
+  }
+  return t;
+}
+
 /** Nome exibido de quem publicou a vaga: empresa > nome livre (admin) > padrão. */
 export const jobPublisher = (j: Pick<Job, "company" | "publisherName">) =>
   j.company?.name ?? j.publisherName ?? DEFAULT_PUBLISHER;

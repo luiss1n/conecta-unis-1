@@ -7,12 +7,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useSession } from "@/hooks/use-session";
 import { supabase } from "@/integrations/supabase/client";
+import { accountTypeOptions, profileKinds } from "@/lib/profile";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
     meta: [
       { title: "Entrar ou criar conta — CONECTA UNIS" },
-      { name: "description", content: "Acesse ou crie sua conta na CONECTA UNIS como empresa ou professor." },
+      { name: "description", content: "Acesse ou crie sua conta na CONECTA UNIS como estudante, empresa ou professor." },
       { property: "og:title", content: "Entrar ou criar conta — CONECTA UNIS" },
       { property: "og:description", content: "Acesse ou crie sua conta na CONECTA UNIS como empresa ou professor." },
     ],
@@ -44,6 +45,8 @@ function AuthPage() {
     const f = new FormData(e.currentTarget);
     const email = String(f.get("email") ?? "");
     const password = String(f.get("password") ?? "");
+    const chosenType = String(f.get("account_type") ?? "");
+    const accountType = (profileKinds as readonly string[]).includes(chosenType) ? chosenType : "visitor";
     setBusy(true);
     try {
       if (mode === "recuperar") {
@@ -60,7 +63,7 @@ function AuthPage() {
       if (mode === "criar") {
         const { data, error } = await supabase.auth.signUp({
           ...p.data,
-          options: { emailRedirectTo: window.location.origin },
+          options: { emailRedirectTo: window.location.origin, data: { account_type: accountType } },
         });
         if (error) return void toast.error(error.message.includes("registered") ? "Este e-mail já tem conta." : /weak|pwned|guess/i.test(error.message) ? "Essa senha é muito comum e fácil de adivinhar. Escolha uma senha mais forte, misturando letras, números e símbolos." : "Não foi possível criar a conta.");
         if (!data.session) return void setSent("Conta criada! Confirme pelo link enviado ao seu e-mail e depois entre.");
@@ -90,7 +93,7 @@ function AuthPage() {
       <div className="w-full max-w-md rounded-xl border bg-card p-8 shadow-card">
         <h1 className="font-display text-2xl font-extrabold">{title}</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Acesse seu perfil de empresa, visitante ou professor.
+          {mode === "criar" ? "Escolha o tipo de conta: seu perfil já nasce configurado." : "Acesse seu perfil de estudante, empresa ou professor."}
         </p>
         {sent ? (
           <p className="mt-6 rounded-md bg-primary-soft p-4 text-sm text-primary">{sent}</p>
@@ -100,6 +103,20 @@ function AuthPage() {
               <Label htmlFor="email">E-mail</Label>
               <Input id="email" name="email" type="email" autoComplete="email" required />
             </div>
+            {mode === "criar" && (
+              <fieldset className="space-y-2">
+                <legend className="text-sm font-medium">Tipo de conta</legend>
+                {accountTypeOptions.map((o, i) => (
+                  <label key={o.value} className="flex cursor-pointer items-start gap-3 rounded-lg border p-3 focus-within:ring-2 focus-within:ring-ring has-[:checked]:border-primary has-[:checked]:bg-primary-soft">
+                    <input type="radio" name="account_type" value={o.value} defaultChecked={i === 0} className="mt-1" />
+                    <span>
+                      <span className="block text-sm font-medium">{o.label}</span>
+                      <span className="block text-xs text-muted-foreground">{o.hint}</span>
+                    </span>
+                  </label>
+                ))}
+              </fieldset>
+            )}
             {mode !== "recuperar" && (
               <div className="space-y-1.5">
                 <Label htmlFor="password">Senha</Label>

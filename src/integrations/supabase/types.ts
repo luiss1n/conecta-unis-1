@@ -182,6 +182,7 @@ export type Database = {
           owner_id: string
           publishedAt: string
           publisher_name: string | null
+          image_path: string | null
           requirements: string[]
           salary: string | null
           schedule: string
@@ -201,6 +202,7 @@ export type Database = {
           owner_id: string
           publishedAt?: string
           publisher_name?: string | null
+          image_path?: string | null
           requirements?: string[]
           salary?: string | null
           schedule: string
@@ -220,6 +222,7 @@ export type Database = {
           owner_id?: string
           publishedAt?: string
           publisher_name?: string | null
+          image_path?: string | null
           requirements?: string[]
           salary?: string | null
           schedule?: string

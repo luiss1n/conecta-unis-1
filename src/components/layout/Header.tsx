@@ -1,11 +1,9 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Bell, Building2, Menu, Plus, ShieldCheck } from "lucide-react";
+import { Menu, Plus, ShieldCheck } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import { demoNotifications } from "@/data/demo";
 import { useSession } from "@/hooks/use-session";
 import { supabase } from "@/integrations/supabase/client";
 import { getMyRole } from "@/services/api";
@@ -32,7 +30,6 @@ export function Logo({ dark = false }: { dark?: boolean }) {
 
 export function Header() {
   const [open, setOpen] = useState(false);
-  const [unread, setUnread] = useState<number>(demoNotifications.length);
   const { session } = useSession();
   const navigate = useNavigate();
   const qc = useQueryClient();
@@ -63,43 +60,8 @@ export function Header() {
           ))}
         </nav>
         <div className="ml-auto flex items-center gap-1.5 sm:gap-2">
-          <Popover onOpenChange={(o) => o && setUnread(0)}>
-            <PopoverTrigger asChild>
-              <Button variant="ghost" size="icon" aria-label="Notificações" className="relative">
-                <Bell className="h-5 w-5" />
-                {unread > 0 && (
-                  <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-brand-purple" />
-                )}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent align="end" className="w-80 p-0">
-              <div className="border-b px-4 py-3">
-                <p className="text-sm font-semibold">Notificações</p>
-                <p className="text-xs text-muted-foreground">Exemplos demonstrativos</p>
-              </div>
-              <ul className="divide-y">
-                {demoNotifications.map((n) => (
-                  <li key={n.id}>
-                    <Link
-                      to={n.to}
-                      className="block px-4 py-3 transition-colors hover:bg-muted focus-visible:outline-2 focus-visible:outline-ring"
-                    >
-                      <p className="text-sm font-medium">{n.title}</p>
-                      <p className="text-xs text-muted-foreground">{n.body}</p>
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </PopoverContent>
-          </Popover>
-          <Link
-            to="/area-empresa"
-            className="hidden items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground xl:inline-flex"
-          >
-            <Building2 className="h-4 w-4" /> Acesso para empresas
-          </Link>
           <Button asChild className="hidden sm:inline-flex">
-            <Link to="/area-empresa">
+            <Link to="/publicar">
               <Plus className="h-4 w-4" /> Publicar vaga
             </Link>
           </Button>
@@ -146,11 +108,8 @@ export function Header() {
                     Painel do administrador
                   </Link>
                 )}
-                <Link to="/area-empresa" onClick={() => setOpen(false)} className="rounded-md px-3 py-3 font-medium hover:bg-muted">
-                  Acesso para empresas
-                </Link>
                 <Button asChild className="mt-2">
-                  <Link to="/area-empresa" onClick={() => setOpen(false)}>
+                  <Link to="/publicar" onClick={() => setOpen(false)}>
                     <Plus className="h-4 w-4" /> Publicar vaga
                   </Link>
                 </Button>

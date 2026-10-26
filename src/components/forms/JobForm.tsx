@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { DEFAULT_PUBLISHER } from "@/lib/jobs";
-import type { NewJobValues } from "@/services/api";
+import { removeJobImage, uploadJobImage, type NewJobValues } from "@/services/api";
 import type { Company, Job } from "@/types";
 import { Field, areaCls, inputCls, lines } from "./fields";
 
@@ -24,6 +24,11 @@ interface Props {
 
 export function JobForm({ initial, admin = false, companies = [], submitLabel, savingLabel = "Salvando…", successMessage, onSubmit, onDone, onCancel }: Props) {
   const [saving, setSaving] = useState(false);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [removeImage, setRemoveImage] = useState(false);
+  const preview = useMemo(() => (imageFile ? URL.createObjectURL(imageFile) : null), [imageFile]);
+  useEffect(() => () => { if (preview) URL.revokeObjectURL(preview); }, [preview]);
+  const currentImage = removeImage ? undefined : (preview ?? initial?.imageUrl);
   const [form, setForm] = useState({
     title: initial?.title ?? "",
     type: initial?.type ?? "estagio",
@@ -53,7 +58,16 @@ export function JobForm({ initial, admin = false, companies = [], submitLabel, s
       toast.error("Escolha uma empresa ou informe quem está publicando a vaga."); return;
     }
     setSaving(true);
+    let uploaded: string | null = null;
     try {
+      // undefined = manter a imagem atual; null = remover; texto = nova imagem enviada agora.
+      let imagePath: string | null | undefined = undefined;
+      if (imageFile) {
+        uploaded = await uploadJobImage(imageFile);
+        imagePath = uploaded;
+      } else if (removeImage) {
+        imagePath = null;
+      }
       await onSubmit({
         title: form.title,
         type: form.type as NewJobValues["type"],
@@ -67,12 +81,15 @@ export function JobForm({ initial, admin = false, companies = [], submitLabel, s
         requirements: lines(form.requirements),
         benefits: lines(form.benefits),
         salary: form.salary || undefined,
+        imagePath,
         companySlug: admin && form.companySlug ? form.companySlug : null,
         publisherName: admin && !form.companySlug ? form.publisherName : null,
       });
+      if (initial?.imagePath && imagePath !== undefined && imagePath !== initial.imagePath) void removeJobImage(initial.imagePath);
       toast.success(successMessage);
       onDone();
     } catch (err) {
+      if (uploaded) void removeJobImage(uploaded); // a vaga não foi salva: não deixa arquivo órfão
       toast.error(err instanceof Error ? err.message : "Não foi possível salvar a vaga.");
     } finally {
       setSaving(false);
@@ -96,6 +113,28 @@ export function JobForm({ initial, admin = false, companies = [], submitLabel, s
           )}
         </div>
       )}
+      <div className="flex flex-col gap-3 rounded-lg border p-4 sm:flex-row sm:items-center">
+        <span className="grid h-16 w-16 shrink-0 place-items-center overflow-hidden rounded-lg bg-muted text-xs text-muted-foreground">
+          {currentImage ? <img src={currentImage} alt="Imagem da vaga" className="h-full w-full object-cover" /> : "Sem imagem"}
+        </span>
+        <div className="min-w-0 flex-1 space-y-2">
+          <Field label="Imagem da empresa (logo ou foto, opcional)">
+            <input
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              className="mt-1 block w-full text-sm file:mr-3 file:rounded-md file:border file:bg-surface file:px-3 file:py-2 file:text-sm"
+              onChange={(e) => { setImageFile(e.target.files?.[0] ?? null); setRemoveImage(false); }}
+            />
+          </Field>
+          <p className="text-xs text-muted-foreground">JPG, PNG ou WebP, até 2 MB. Aparece ao lado do título da vaga.</p>
+          {(initial?.imageUrl || imageFile) && (
+            <label className="flex items-center gap-2 text-sm">
+              <input type="checkbox" checked={removeImage} onChange={(e) => { setRemoveImage(e.target.checked); if (e.target.checked) setImageFile(null); }} />
+              Remover imagem
+            </label>
+          )}
+        </div>
+      </div>
       <Field label="Título da vaga">
         <input className={inputCls} value={form.title} onChange={set("title")} maxLength={150} placeholder="Ex.: Estagiário de Marketing" />
       </Field>
