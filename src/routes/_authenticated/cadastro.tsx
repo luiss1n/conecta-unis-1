@@ -103,8 +103,12 @@ function Registration() {
     const parsed = (kind === "company" ? company : kind === "professor" ? professor : base.extend({ kind: z.literal("visitor") })).safeParse(raw);
     if (!parsed.success) return void toast.error(parsed.error.issues[0]?.message);
     setBusy(true);
-    const { error } = await supabase.rpc("save_registration", { payload: parsed.data });
-    setBusy(false);
+    let error: { message: string } | null = null;
+    try {
+      ({ error } = await supabase.rpc("save_registration", { payload: parsed.data }));
+    } finally {
+      setBusy(false);
+    }
     if (error) return void toast.error("Não foi possível salvar. Verifique os dados (o usuário pode já estar em uso).");
     toast.success("Cadastro salvo!");
     qc.invalidateQueries({ queryKey: ["registration"] });

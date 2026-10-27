@@ -24,10 +24,14 @@ function ResetPassword() {
   async function submit(e: FormEvent<HTMLFormElement>): Promise<void> {
     e.preventDefault();
     const password = String(new FormData(e.currentTarget).get("password") ?? "");
-    if (password.length < 8) return void toast.error("A senha precisa de pelo menos 8 caracteres");
+    if (password.length < 12 || password.length > 72) return void toast.error("A senha precisa ter entre 12 e 72 caracteres");
     setBusy(true);
-    const { error } = await supabase.auth.updateUser({ password });
-    setBusy(false);
+    let error: { message: string } | null = null;
+    try {
+      ({ error } = await supabase.auth.updateUser({ password }));
+    } finally {
+      setBusy(false);
+    }
     if (error) return void toast.error("Link expirado ou inválido. Peça um novo.");
     toast.success("Senha atualizada!");
     navigate({ to: "/cadastro" });
@@ -38,7 +42,7 @@ function ResetPassword() {
         <h1 className="font-display text-2xl font-extrabold">Nova senha</h1>
         <div className="space-y-1.5">
           <Label htmlFor="password">Nova senha</Label>
-          <Input id="password" name="password" type="password" minLength={8} required autoComplete="new-password" />
+          <Input id="password" name="password" type="password" minLength={12} maxLength={72} required autoComplete="new-password" />
         </div>
         <Button type="submit" className="w-full" disabled={busy}>Salvar senha</Button>
       </form>

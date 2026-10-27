@@ -24,6 +24,9 @@ const creds = z.object({
   email: z.string().trim().email("E-mail inválido").max(255),
   password: z.string().min(8, "A senha precisa de pelo menos 8 caracteres").max(72),
 });
+const signupCreds = creds.extend({
+  password: z.string().min(12, "A senha precisa de pelo menos 12 caracteres").max(72),
+});
 
 type Mode = "entrar" | "criar" | "recuperar";
 
@@ -55,14 +58,14 @@ function AuthPage() {
         if (error) return void toast.error("Não foi possível enviar o e-mail.");
         return void setSent("Enviamos um link para redefinir sua senha.");
       }
-      const p = creds.safeParse({ email, password });
+      const p = (mode === "criar" ? signupCreds : creds).safeParse({ email, password });
       if (!p.success) return void toast.error(p.error.issues[0]?.message);
       if (mode === "criar") {
         const { data, error } = await supabase.auth.signUp({
           ...p.data,
           options: { emailRedirectTo: window.location.origin },
         });
-        if (error) return void toast.error(error.message.includes("registered") ? "Este e-mail já tem conta." : /weak|pwned|guess/i.test(error.message) ? "Essa senha é muito comum e fácil de adivinhar. Escolha uma senha mais forte, misturando letras, números e símbolos." : "Não foi possível criar a conta.");
+        if (error) return void toast.error(/weak|pwned|guess/i.test(error.message) ? "Essa senha é muito comum e fácil de adivinhar. Escolha uma senha mais forte, misturando letras, números e símbolos." : "Não foi possível criar a conta. Verifique os dados ou tente novamente.");
         if (!data.session) return void setSent("Conta criada! Confirme pelo link enviado ao seu e-mail e depois entre.");
       } else {
         const { error } = await supabase.auth.signInWithPassword(p.data);
@@ -103,7 +106,7 @@ function AuthPage() {
             {mode !== "recuperar" && (
               <div className="space-y-1.5">
                 <Label htmlFor="password">Senha</Label>
-                <Input id="password" name="password" type="password" autoComplete={mode === "criar" ? "new-password" : "current-password"} required minLength={8} />
+                <Input id="password" name="password" type="password" autoComplete={mode === "criar" ? "new-password" : "current-password"} required minLength={mode === "criar" ? 12 : 8} maxLength={72} />
               </div>
             )}
             <Button type="submit" className="w-full" disabled={busy}>{busy ? "Aguarde…" : title}</Button>
