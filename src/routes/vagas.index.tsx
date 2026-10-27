@@ -86,7 +86,15 @@ function JobsPage() {
             </div>
           </div>
           {results.length === 0 ? (
-            <EmptyState title="Nenhuma vaga corresponde à sua busca" description="Ajuste os termos ou limpe os filtros para ver todas as oportunidades." action={<Button onClick={() => setF(emptyFilters)}>Limpar filtros</Button>} />
+            <EmptyState
+              title="Nenhuma vaga encontrada"
+              description={
+                all.length > 0
+                  ? `Há ${all.length} vaga${all.length === 1 ? "" : "s"} publicada${all.length === 1 ? "" : "s"} no momento, mas nenhuma corresponde à busca e aos filtros atuais. Remova alguns critérios ou limpe os filtros para ver mais resultados.`
+                  : "Ainda não há vagas publicadas. Volte mais tarde para conferir novas oportunidades."
+              }
+              action={<Button onClick={() => setF(emptyFilters)}>Limpar filtros</Button>}
+            />
           ) : (
             <JobList jobs={results} />
           )}

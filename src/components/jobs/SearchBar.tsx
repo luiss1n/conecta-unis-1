@@ -26,7 +26,7 @@ export function SearchBar({ value, onChange, onSubmit, placeholder = "Buscar vag
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="h-11 min-w-0 flex-1 bg-transparent text-base outline-none placeholder:text-muted-foreground [&::-webkit-search-cancel-button]:hidden"
+        className="h-11 min-w-0 flex-1 bg-transparent text-base text-foreground caret-foreground outline-none placeholder:text-muted-foreground selection:bg-primary/20 selection:text-foreground [&::-webkit-search-cancel-button]:hidden"
       />
       {value && (
         <Button type="button" variant="ghost" size="icon" aria-label="Limpar busca" onClick={() => onChange("")}>
