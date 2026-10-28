@@ -4,6 +4,7 @@ import {
   Link,
   createRootRouteWithContext,
   useRouter,
+  useRouterState,
   HeadContent,
   Scripts,
   type ErrorComponentProps,
@@ -125,23 +126,31 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const pathname = useRouterState({ select: (state) => state.location.pathname });
+  const isAuthSurface = pathname === "/auth" || pathname === "/reset-password";
 
   return (
     <QueryClientProvider client={queryClient}>
-      {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-      <SmoothScroll>
-      <div className="flex min-h-screen flex-col">
-        <a href="#conteudo" className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-md focus:bg-primary focus:px-4 focus:py-2 focus:text-primary-foreground">
-          Pular para o conteúdo
-        </a>
-        <ScrollProgress />
-        <Header />
-        <main id="conteudo" className="flex-1">
+      {isAuthSurface ? (
+        <main id="conteudo" className="min-h-screen">
           <Outlet />
         </main>
-        <Footer />
-      </div>
-      </SmoothScroll>
+      ) : (
+        <SmoothScroll>
+          <div className="flex min-h-screen flex-col">
+            <a href="#conteudo" className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-md focus:bg-primary focus:px-4 focus:py-2 focus:text-primary-foreground">
+              Pular para o conteúdo
+            </a>
+            <ScrollProgress />
+            <Header />
+            <main id="conteudo" className="flex-1">
+              {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
+              <Outlet />
+            </main>
+            <Footer />
+          </div>
+        </SmoothScroll>
+      )}
       <Toaster position="bottom-right" />
     </QueryClientProvider>
   );

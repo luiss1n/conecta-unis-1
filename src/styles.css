@@ -246,6 +246,13 @@ html {
 .btn-press:hover  { filter: brightness(1.05); }
 .btn-press:active { transform: scale(0.96); }
 
+/* Entrada curta da tela de acesso, sem animar dimensões ou causar salto de layout. */
+@keyframes auth-enter {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.auth-enter { animation: auth-enter 240ms var(--ease-out-expo) both; }
+
 /* ---------- Barra de progresso de rolagem ---------- */
 .scroll-progress {
   position: fixed;
@@ -267,7 +274,8 @@ html {
   html { scroll-behavior: auto; }
   .reveal,
   .hero-in,
-  .hero-bg-in {
+  .hero-bg-in,
+  .auth-enter {
     opacity: 1 !important;
     transform: none !important;
     animation: none !important;
