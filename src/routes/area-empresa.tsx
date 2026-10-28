@@ -1,12 +1,23 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, redirect } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowRight, Building2, FileText, MessageCircle, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/common/PageHeader";
 import { useSession } from "@/hooks/use-session";
 import { getMyRole } from "@/services/api";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/area-empresa")({
+  beforeLoad: async () => {
+    const { data: auth } = await supabase.auth.getUser();
+    if (!auth.user) return;
+    const { data, error } = await supabase.from("user_roles").select("role").eq("user_id", auth.user.id).maybeSingle();
+    if (error) throw error;
+    if (data?.role === "visitor") throw redirect({ to: "/candidaturas" });
+    if (data?.role === "admin") throw redirect({ to: "/admin" });
+    if (data?.role === "company" || data?.role === "professor") throw redirect({ to: "/publicar" });
+    throw redirect({ to: "/cadastro" });
+  },
   head: () => ({
     meta: [
       { title: "Publicar oportunidades — CONECTA UNIS" },

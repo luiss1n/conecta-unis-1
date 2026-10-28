@@ -43,6 +43,13 @@
       "when": 1793217600000,
       "tag": "0006_applications_and_conversations",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1793217660000,
+      "tag": "0007_institutional_roles",
+      "breakpoints": true
     }
   ]
 }

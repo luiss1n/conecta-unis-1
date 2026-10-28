@@ -1,9 +1,15 @@
 import { Link } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
 import { Mail, MapPin, Phone } from "lucide-react";
+import { useSession } from "@/hooks/use-session";
+import { getMyRole } from "@/services/api";
 import { Logo } from "./Header";
 
 export function Footer() {
   const year = new Date().getFullYear();
+  const { session } = useSession();
+  const { data: role } = useQuery({ queryKey: ["my-role"], queryFn: getMyRole, enabled: !!session });
+  const canSeeBusinessArea = !session || role === "company" || role === "professor" || role === "admin";
   return (
     <footer className="mt-20 border-t border-footer-border bg-footer text-footer-foreground">
       <div className="container-page grid gap-10 py-12 md:grid-cols-[2fr_1fr_1fr_1.2fr]">
@@ -27,7 +33,7 @@ export function Footer() {
         <nav aria-label="Institucional">
           <p className="mb-3 text-sm font-semibold">Institucional</p>
           <ul className="space-y-2 text-sm text-footer-muted">
-            <li><Link to="/area-empresa" className="hover:text-footer-accent">Área para empresas</Link></li>
+            {canSeeBusinessArea && <li><Link to="/area-empresa" className="hover:text-footer-accent">Área para empresas</Link></li>}
             <li><Link to="/privacidade" className="hover:text-footer-accent">Política de privacidade</Link></li>
             <li><Link to="/auth" className="hover:text-footer-accent">Criar conta</Link></li>
           </ul>

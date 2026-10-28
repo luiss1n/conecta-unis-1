@@ -1,14 +1,24 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, redirect } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { Briefcase, CalendarDays, CheckCircle2 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/common/PageHeader";
+import { supabase } from "@/integrations/supabase/client";
 import { EventForm } from "@/components/forms/EventForm";
 import { JobForm } from "@/components/forms/JobForm";
 import { createEvent, createJob, getMyProfile } from "@/services/api";
 
 export const Route = createFileRoute("/_authenticated/publicar")({
+  beforeLoad: async () => {
+    const { data: auth } = await supabase.auth.getUser();
+    if (!auth.user) throw redirect({ to: "/auth" });
+    const { data, error } = await supabase.from("user_roles").select("role").eq("user_id", auth.user.id).maybeSingle();
+    if (error) throw error;
+    if (data?.role === "visitor") throw redirect({ to: "/candidaturas" });
+    if (data?.role === "admin") throw redirect({ to: "/admin" });
+    if (!data?.role) throw redirect({ to: "/cadastro" });
+  },
   head: () => ({
     meta: [
       { title: "Publicar — CONECTA UNIS" },

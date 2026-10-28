@@ -42,6 +42,7 @@ export function Header() {
   const qc = useQueryClient();
   const { data: role } = useQuery({ queryKey: ["my-role"], queryFn: getMyRole, enabled: !!session });
   const isAdmin = role === "admin";
+  const canPublish = role === "company" || role === "professor";
   const unreadCount = demoNotifications.length - readNotifications.size;
   function markAsRead(id: string) {
     setReadNotifications((current) => new Set(current).add(id));
@@ -127,13 +128,9 @@ export function Header() {
               </ul>
             </PopoverContent>
           </Popover>
-          <Button asChild className="hidden sm:inline-flex">
-            <Link to="/area-empresa">
-              <Plus className="h-4 w-4" /> Publicar vaga
-            </Link>
-          </Button>
           {session ? (
             <>
+              {canPublish && <Button asChild className="hidden sm:inline-flex"><Link to="/publicar"><Plus className="h-4 w-4" /> Publicar vaga</Link></Button>}
               {isAdmin && (
                 <Button asChild size="sm" className="hidden sm:inline-flex"><Link to="/admin"><ShieldCheck className="h-4 w-4" /> Painel admin</Link></Button>
               )}
@@ -177,11 +174,7 @@ export function Header() {
                     Painel do administrador
                   </Link>
                 )}
-                <Button asChild className="mt-2">
-                  <Link to="/area-empresa" onClick={() => setOpen(false)}>
-                    <Plus className="h-4 w-4" /> Publicar vaga
-                  </Link>
-                </Button>
+                {canPublish && <Button asChild className="mt-2"><Link to="/publicar" onClick={() => setOpen(false)}><Plus className="h-4 w-4" /> Publicar vaga</Link></Button>}
               </nav>
             </SheetContent>
           </Sheet>

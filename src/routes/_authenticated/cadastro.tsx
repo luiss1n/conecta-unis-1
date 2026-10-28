@@ -97,6 +97,7 @@ function Registration() {
 
   const d = data.values;
   const locked = !!data.role;
+  const canRegisterAsProfessor = data.role === "professor" || data.email.toLowerCase().endsWith("@professor.unis.edu.br");
 
   async function submit(e: FormEvent<HTMLFormElement>): Promise<void> {
     e.preventDefault();
@@ -129,13 +130,13 @@ function Registration() {
           <Button variant="outline"
             key={k}
             type="button"
-            disabled={locked && data.role !== k}
+            disabled={(locked && data.role !== k) || (k === "professor" && !canRegisterAsProfessor)}
             onClick={() => setKind(k)}
             aria-pressed={kind === k}
             className={`h-auto items-start justify-start gap-3 whitespace-normal rounded-lg p-4 text-left disabled:opacity-40 ${kind === k ? "border-primary bg-primary-soft" : "bg-card"}`}
           >
             <Icon className="mt-0.5 h-5 w-5 text-primary" />
-            <span><span className="block font-bold">{t}</span><span className="text-sm text-muted-foreground">{s}</span></span>
+            <span><span className="block font-bold">{t}</span><span className="text-sm text-muted-foreground">{k === "professor" && !canRegisterAsProfessor ? "Use seu e-mail institucional de professor" : s}</span></span>
           </Button>
         ))}
       </div>

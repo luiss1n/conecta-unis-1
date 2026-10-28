@@ -13,9 +13,9 @@ export const Route = createFileRoute("/auth")({
   head: () => ({
     meta: [
       { title: "Entrar ou criar conta — CONECTA UNIS" },
-      { name: "description", content: "Acesse ou crie sua conta na CONECTA UNIS como empresa ou professor." },
+      { name: "description", content: "Acesse sua conta CONECTA UNIS como aluno, professor ou empresa." },
       { property: "og:title", content: "Entrar ou criar conta — CONECTA UNIS" },
-      { property: "og:description", content: "Acesse ou crie sua conta na CONECTA UNIS como empresa ou professor." },
+      { property: "og:description", content: "Acesse sua conta CONECTA UNIS como aluno, professor ou empresa." },
     ],
   }),
   component: AuthPage,
@@ -92,7 +92,7 @@ function AuthPage() {
       <div className="w-full max-w-md rounded-xl border bg-card p-8 shadow-card">
         <h1 className="font-display text-2xl font-extrabold">{title}</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Acesse seu perfil de empresa, visitante ou professor.
+          Entre com Google ou e-mail. Contas institucionais confirmadas de aluno e professor recebem o perfil correspondente automaticamente.
         </p>
         {sent ? (
           <p className="mt-6 rounded-md bg-primary-soft p-4 text-sm text-primary">{sent}</p>
