@@ -1,10 +1,11 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
+import { passwordRequirements, strongPasswordSchema } from "@/lib/password";
 
 export const Route = createFileRoute("/reset-password")({
   head: () => ({
@@ -21,18 +22,28 @@ export const Route = createFileRoute("/reset-password")({
 function ResetPassword() {
   const navigate = useNavigate();
   const [busy, setBusy] = useState(false);
+  const [password, setPassword] = useState("");
+  const [passwordError, setPasswordError] = useState<string | null>(null);
+  const passwordRef = useRef<HTMLInputElement>(null);
   async function submit(e: FormEvent<HTMLFormElement>): Promise<void> {
     e.preventDefault();
-    const password = String(new FormData(e.currentTarget).get("password") ?? "");
-    if (password.length < 12 || password.length > 72) return void toast.error("A senha precisa ter entre 12 e 72 caracteres");
+    if (busy) return;
+    const result = strongPasswordSchema.safeParse(password);
+    if (!result.success) {
+      setPasswordError(result.error.issues[0]?.message ?? "Confira os requisitos da senha.");
+      passwordRef.current?.focus();
+      return;
+    }
     setBusy(true);
     let error: { message: string } | null = null;
     try {
       ({ error } = await supabase.auth.updateUser({ password }));
+    } catch {
+      return void toast.error("Não foi possível atualizar a senha. Peça um novo link e tente novamente.");
     } finally {
       setBusy(false);
     }
-    if (error) return void toast.error("Link expirado ou inválido. Peça um novo.");
+    if (error) return void toast.error("Não foi possível atualizar a senha. Confira o link e os requisitos da senha.");
     toast.success("Senha atualizada!");
     navigate({ to: "/cadastro" });
   }
@@ -42,9 +53,11 @@ function ResetPassword() {
         <h1 className="font-display text-2xl font-extrabold">Nova senha</h1>
         <div className="space-y-1.5">
           <Label htmlFor="password">Nova senha</Label>
-          <Input id="password" name="password" type="password" minLength={12} maxLength={72} required autoComplete="new-password" />
+          <Input ref={passwordRef} id="password" name="password" type="password" minLength={8} maxLength={72} required autoComplete="new-password" value={password} aria-invalid={!!passwordError} aria-describedby={passwordError ? "password-error" : "password-requirements"} onChange={(event) => { setPassword(event.target.value); if (passwordError) setPasswordError(null); }} onBlur={() => { const result = strongPasswordSchema.safeParse(password); setPasswordError(result.success ? null : result.error.issues[0]?.message ?? null); }} />
+          {passwordError && <p id="password-error" role="alert" className="text-sm text-destructive">{passwordError}</p>}
+          <p id="password-requirements" className="text-xs text-muted-foreground">{passwordRequirements}</p>
         </div>
-        <Button type="submit" className="w-full" disabled={busy}>Salvar senha</Button>
+        <Button type="submit" className="w-full" aria-busy={busy}>{busy ? "Salvando…" : "Salvar senha"}</Button>
       </form>
     </div>
   );

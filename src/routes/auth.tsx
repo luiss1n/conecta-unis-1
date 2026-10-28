@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useSession } from "@/hooks/use-session";
 import { consumeAuthReturn, getAuthCallbackUrl } from "@/lib/auth-return";
+import { passwordRequirements, strongPasswordSchema } from "@/lib/password";
 import { supabase } from "@/integrations/supabase/client";
 import wordmarkLogo from "@/assets/conecta-unis-wordmark-login.png";
 
@@ -24,7 +25,6 @@ export const Route = createFileRoute("/auth")({
 
 const emailSchema = z.string().trim().email("Informe um e-mail válido.").max(255, "O e-mail deve ter até 255 caracteres.");
 const passwordSchema = z.string().min(8, "A senha precisa ter pelo menos 8 caracteres.").max(72, "A senha deve ter até 72 caracteres.");
-const signupPasswordSchema = z.string().min(12, "Crie uma senha com pelo menos 12 caracteres.").max(72, "A senha deve ter até 72 caracteres.");
 
 type Mode = "entrar" | "criar" | "recuperar";
 
@@ -78,7 +78,7 @@ function AuthPage() {
 
   function validatePassword(): string | null {
     if (mode === "recuperar") return null;
-    const error = getIssue(mode === "criar" ? signupPasswordSchema : passwordSchema, password);
+    const error = getIssue(mode === "criar" ? strongPasswordSchema : passwordSchema, password);
     setPasswordError(error);
     return error;
   }
@@ -125,8 +125,8 @@ function AuthPage() {
       const message = error instanceof Error ? error.message.toLowerCase() : "";
       if (mode === "entrar" && /invalid login credentials|invalid_credentials/.test(message)) {
         setAuthError("E-mail ou senha incorretos. Confira os dados ou recupere sua senha.");
-      } else if (/weak|pwned|guess/.test(message)) {
-        setPasswordError("Essa senha é fácil de adivinhar. Crie outra com letras, números e símbolos.");
+      } else if (/weak|pwned|guess|password/.test(message)) {
+        setPasswordError(`A senha não atende aos requisitos: ${passwordRequirements}`);
         passwordRef.current?.focus();
       } else {
         setAuthError(mode === "recuperar" ? "Não foi possível enviar o link. Confira o e-mail e tente novamente." : "Não foi possível concluir o acesso. Tente novamente em instantes.");
@@ -211,7 +211,7 @@ function AuthPage() {
                     type="password"
                     autoComplete={mode === "criar" ? "new-password" : "current-password"}
                     required
-                    minLength={mode === "criar" ? 12 : 8}
+                    minLength={8}
                     maxLength={72}
                     value={password}
                     aria-invalid={!!passwordError}
@@ -221,7 +221,7 @@ function AuthPage() {
                     onFocus={() => passwordError && setPasswordError(null)}
                   />
                   {passwordError && <p id="password-error" role="alert" className="text-sm text-destructive">{passwordError}</p>}
-                  {mode === "criar" && !passwordError && <p className="text-xs text-muted-foreground">Use pelo menos 12 caracteres.</p>}
+                  {mode === "criar" && !passwordError && <p className="text-xs text-muted-foreground">{passwordRequirements}</p>}
                 </div>
               )}
               <Button type="submit" className="btn-press w-full" aria-busy={busy}>

@@ -25,9 +25,17 @@ export const Route = createFileRoute("/_authenticated/cadastro")({
 
 type Kind = "company" | "professor" | "visitor";
 
+function normalizeUsername(value: string): string {
+  return value.trim().normalize("NFC").toLocaleLowerCase("pt-BR");
+}
+
+const usernameSchema = z.string().transform(normalizeUsername)
+  .refine((value) => value.length >= 3 && value.length <= 50, "Use de 3 a 50 caracteres.")
+  .refine((value) => /^[\p{L}\p{M}\p{N}\p{P}]+$/u.test(value) && /[\p{L}\p{N}]/u.test(value), "Use letras, números e pontuação, sem espaços ou emojis.");
+
 const base = z.object({
   display_name: z.string().trim().min(2, "Informe seu nome").max(100),
-  username: z.string().trim().regex(/^[a-zA-Z0-9_]{3,50}$/, "Usuário: 3 a 50 letras, números ou _"),
+  username: usernameSchema,
   city: z.string().trim().min(2, "Informe a cidade").max(100),
   phone: z.string().trim().max(30),
   bio: z.string().trim().max(2000),
@@ -71,6 +79,17 @@ function Field({ name, label, d, area, ...rest }: { name: string; label: string;
     <div className="space-y-1.5">
       <Label htmlFor={name}>{label}</Label>
       {area ? <Textarea id={name} name={name} defaultValue={d[name] ?? ""} rows={3} {...rest} /> : <Input id={name} name={name} defaultValue={d[name] ?? ""} {...rest} />}
+    </div>
+  );
+}
+
+function UsernameField({ defaultValue }: { defaultValue: string | undefined }) {
+  const [username, setUsername] = useState(() => normalizeUsername(defaultValue ?? ""));
+  return (
+    <div className="space-y-1.5">
+      <Label htmlFor="username">Nome de usuário</Label>
+      <Input id="username" name="username" value={username} onChange={(event) => setUsername(normalizeUsername(event.target.value))} required minLength={3} maxLength={50} autoCapitalize="none" autoCorrect="off" spellCheck={false} placeholder="ex.: maria.silva" aria-describedby="username-help" />
+      <p id="username-help" className="text-xs text-muted-foreground">Use de 3 a 50 caracteres, sem espaços. Letras acentuadas, números e pontuação são aceitos.</p>
     </div>
   );
 }
@@ -147,7 +166,7 @@ function Registration() {
           <section className="grid gap-4 sm:grid-cols-2">
             <h2 className="font-bold sm:col-span-2">Seus dados</h2>
             <Field name="display_name" label="Nome completo" d={d} required />
-            <Field name="username" label="Nome de usuário" d={d} required placeholder="ex.: maria_silva" />
+            <UsernameField defaultValue={d.username} />
             <Field name="city" label="Cidade" d={d} required />
             <Field name="phone" label="Telefone" d={d} />
             <div className="sm:col-span-2"><Field name="bio" label={kind === "company" ? "Sobre a empresa" : "Sobre você"} d={d} area /></div>
