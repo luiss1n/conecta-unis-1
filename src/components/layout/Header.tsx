@@ -137,6 +137,7 @@ export function Header() {
               {isAdmin && (
                 <Button asChild size="sm" className="hidden sm:inline-flex"><Link to="/admin"><ShieldCheck className="h-4 w-4" /> Painel admin</Link></Button>
               )}
+              <Button asChild variant="ghost" size="sm" className="hidden sm:inline-flex"><Link to="/candidaturas">Candidaturas</Link></Button>
               <Button asChild variant="outline" size="sm"><Link to="/perfil">Meu perfil</Link></Button>
               <Button variant="ghost" size="sm" onClick={signOut}>Sair</Button>
             </>
@@ -170,6 +171,7 @@ export function Header() {
                 <Link to={session ? "/perfil" : "/auth"} onClick={() => setOpen(false)} className="rounded-md px-3 py-3 font-medium hover:bg-muted">
                   {session ? "Meu perfil" : "Entrar"}
                 </Link>
+                {session && <Link to="/candidaturas" onClick={() => setOpen(false)} className="rounded-md px-3 py-3 font-medium hover:bg-muted">Candidaturas e conversas</Link>}
                 {isAdmin && (
                   <Link to="/admin" onClick={() => setOpen(false)} className="rounded-md px-3 py-3 font-medium text-primary hover:bg-muted">
                     Painel do administrador

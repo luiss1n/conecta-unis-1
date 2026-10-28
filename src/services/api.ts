@@ -10,10 +10,13 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
 import { profileSchema, validateProfileFile, type ProfileValues, type ProfileFileKind } from "@/lib/profile";
 import type { CareerEvent, Company, Job, JobCategory } from "@/types";
+import { z } from "zod";
 
 type JobRow = Database["public"]["Tables"]["jobs"]["Row"];
 type CompanyRow = Database["public"]["Tables"]["companies"]["Row"];
 type EventRow = Database["public"]["Tables"]["events"]["Row"];
+export type JobApplication = Database["public"]["Tables"]["job_applications"]["Row"];
+export type ApplicationMessage = Database["public"]["Tables"]["application_messages"]["Row"];
 
 const TONES: readonly string[] = ["blue", "purple", "green", "amber"];
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -118,6 +121,119 @@ export async function getEvent(id: string): Promise<CareerEvent | undefined> {
   const { data, error } = await supabase.from("events").select("*").eq("id", id).maybeSingle();
   if (error) throw error;
   return data ? toEvent(data) : undefined;
+}
+
+export async function getMyEventInterestIds(): Promise<string[]> {
+  const user = await requireUser();
+  const { data, error } = await supabase.from("event_interests").select("event_id").eq("user_id", user.id);
+  if (error) throw new Error("Não foi possível carregar suas inscrições em eventos.");
+  return (data ?? []).map((item) => item.event_id);
+}
+
+export async function registerForEvent(eventId: string): Promise<void> {
+  const user = await requireUser();
+  const { error } = await supabase.from("event_interests").upsert(
+    { user_id: user.id, event_id: eventId },
+    { onConflict: "user_id,event_id", ignoreDuplicates: true },
+  );
+  if (error) throw new Error("Entre como aluno ou professor para se inscrever neste evento.");
+}
+
+export async function getMyEventRegistrations() {
+  const user = await requireUser();
+  const { data, error } = await supabase.from("event_interests").select("event_id,created_at").eq("user_id", user.id).order("created_at", { ascending: false }).limit(100);
+  if (error) throw new Error("Não foi possível carregar suas inscrições em eventos.");
+  const events = await Promise.all((data ?? []).map(async (item) => ({ registration: item, event: await getEvent(item.event_id) })));
+  return events.flatMap((item) => item.event ? [{ registration: item.registration, event: item.event }] : []);
+}
+
+export async function getMyJobApplication(jobSlug: string): Promise<JobApplication | null> {
+  const user = await requireUser();
+  const { data, error } = await supabase.from("job_applications").select("*").eq("job_slug", jobSlug).eq("applicant_id", user.id).maybeSingle();
+  if (error) throw new Error("Não foi possível verificar sua candidatura.");
+  return data;
+}
+
+export async function submitJobApplication(jobSlug: string, coverMessage: string): Promise<string> {
+  const parsed = z.string().trim().max(2000, "A mensagem pode ter até 2.000 caracteres.").safeParse(coverMessage);
+  if (!parsed.success) throw new Error(parsed.error.issues[0]?.message ?? "Mensagem inválida.");
+  const { data, error } = await supabase.rpc("submit_job_application", {
+    _job_slug: jobSlug,
+    _consent: true,
+    _cover_message: parsed.data,
+  });
+  if (error) {
+    if (error.message.includes("already applied")) throw new Error("Você já se candidatou a esta vaga.");
+    if (error.message.includes("Complete your profile")) throw new Error("Complete seu nome e e-mail no perfil antes de se candidatar.");
+    throw new Error("Não foi possível enviar sua candidatura. Confira seu perfil e tente novamente.");
+  }
+  return data;
+}
+
+export type ApplicationListItem = { application: JobApplication; job: Job };
+
+async function attachApplicationJobs(rows: JobApplication[]): Promise<ApplicationListItem[]> {
+  const slugs = [...new Set(rows.map((row) => row.job_slug))];
+  const jobs = await Promise.all(slugs.map(async (slug) => [slug, await getJob(slug)] as const));
+  const bySlug = new Map<string, Job>();
+  for (const [slug, job] of jobs) if (job) bySlug.set(slug, job);
+  return rows.flatMap((application) => {
+    const job = bySlug.get(application.job_slug);
+    return job ? [{ application, job }] : [];
+  });
+}
+
+export async function getMyApplications(): Promise<ApplicationListItem[]> {
+  const user = await requireUser();
+  const { data, error } = await supabase.from("job_applications").select("*").eq("applicant_id", user.id).order("created_at", { ascending: false }).limit(100);
+  if (error) throw new Error("Não foi possível carregar suas candidaturas.");
+  return attachApplicationJobs(data ?? []);
+}
+
+export async function getReceivedApplications(): Promise<ApplicationListItem[]> {
+  const user = await requireUser();
+  const { data: jobs, error: jobsError } = await supabase.from("jobs").select("slug").eq("owner_id", user.id);
+  if (jobsError) throw new Error("Não foi possível carregar suas vagas.");
+  const slugs = (jobs ?? []).map((job) => job.slug);
+  if (!slugs.length) return [];
+  const { data, error } = await supabase.from("job_applications").select("*").in("job_slug", slugs).order("created_at", { ascending: false }).limit(100);
+  if (error) throw new Error("Não foi possível carregar as candidaturas recebidas.");
+  return attachApplicationJobs(data ?? []);
+}
+
+export async function getApplicationConversation(applicationId: string) {
+  const user = await requireUser();
+  const { data: application, error } = await supabase.from("job_applications").select("*").eq("id", applicationId).maybeSingle();
+  if (error || !application) throw new Error("Conversa não encontrada ou sem permissão.");
+  const job = await getJob(application.job_slug);
+  if (!job) throw new Error("A vaga desta candidatura não está mais disponível.");
+  return { application, job, isCandidate: application.applicant_id === user.id };
+}
+
+export async function getApplicationMessages(applicationId: string): Promise<ApplicationMessage[]> {
+  const { data, error } = await supabase.from("application_messages").select("*").eq("application_id", applicationId).order("created_at", { ascending: true }).limit(200);
+  if (error) throw new Error("Não foi possível carregar as mensagens.");
+  return data ?? [];
+}
+
+export async function sendApplicationMessage(applicationId: string, body: string): Promise<void> {
+  const parsed = z.string().trim().min(1, "Escreva uma mensagem.").max(4000, "A mensagem pode ter até 4.000 caracteres.").safeParse(body);
+  if (!parsed.success) throw new Error(parsed.error.issues[0]?.message ?? "Mensagem inválida.");
+  const user = await requireUser();
+  const { error } = await supabase.from("application_messages").insert({ application_id: applicationId, sender_id: user.id, body: parsed.data });
+  if (error) throw new Error("Não foi possível enviar a mensagem. Verifique se você participa desta conversa.");
+}
+
+export async function updateApplicationStatus(applicationId: string, status: "reviewing" | "interview" | "closed" | "withdrawn"): Promise<void> {
+  const { error } = await supabase.rpc("update_job_application_status", { _application_id: applicationId, _status: status });
+  if (error) throw new Error("Não foi possível atualizar o status desta candidatura.");
+}
+
+export async function getApplicationResumeUrl(application: JobApplication): Promise<string | null> {
+  if (!application.applicant_resume_path) return null;
+  const { data, error } = await supabase.storage.from("profile-photos").createSignedUrl(application.applicant_resume_path, 300);
+  if (error) throw new Error("O currículo não está disponível para esta conversa.");
+  return data.signedUrl;
 }
 
 export const getCandidateProfile = () => demoCandidate;
@@ -227,11 +343,25 @@ function jobPayload(values: NewJobValues) {
 
 export async function createJob(values: NewJobValues) {
   const user = await requireUser();
-  const { data: company, error: companyError } = await supabase
-    .from("companies").select("slug").eq("owner_id", user.id).maybeSingle();
-  if (companyError) throw companyError;
-  if (!company) throw new Error("Cadastre sua empresa antes de publicar vagas.");
-  const { error } = await supabase.from("jobs").insert({ owner_id: user.id, companySlug: company.slug, ...jobPayload(values) });
+  const role = await getMyRole();
+  let publisher: { companySlug: string | null; publisher_name: string | null };
+  if (role === "company") {
+    const { data: company, error: companyError } = await supabase
+      .from("companies").select("slug").eq("owner_id", user.id).maybeSingle();
+    if (companyError) throw companyError;
+    if (!company) throw new Error("Complete o cadastro da empresa antes de publicar vagas.");
+    publisher = { companySlug: company.slug, publisher_name: null };
+  } else if (role === "professor") {
+    const [profile, academic] = await Promise.all([
+      supabase.from("profiles").select("display_name").eq("id", user.id).single(),
+      supabase.from("professor_details").select("institution").eq("user_id", user.id).maybeSingle(),
+    ]);
+    if (profile.error || academic.error) throw new Error("Não foi possível carregar os dados de publicação.");
+    publisher = { companySlug: null, publisher_name: academic.data?.institution || profile.data.display_name };
+  } else {
+    throw new Error("Somente empresas e professores podem publicar vagas por esta área.");
+  }
+  const { error } = await supabase.from("jobs").insert({ owner_id: user.id, ...publisher, ...jobPayload(values) });
   if (error) throw new Error("Não foi possível publicar a vaga. Verifique os dados e tente novamente.");
 }
 

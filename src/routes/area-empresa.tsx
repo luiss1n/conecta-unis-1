@@ -1,69 +1,53 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { Building2, CheckCircle2, FileText, Users } from "lucide-react";
-import { useState } from "react";
-import { toast } from "sonner";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
+import { ArrowRight, Building2, FileText, MessageCircle, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/common/PageHeader";
+import { useSession } from "@/hooks/use-session";
+import { getMyRole } from "@/services/api";
 
 export const Route = createFileRoute("/area-empresa")({
   head: () => ({
     meta: [
-      { title: "Área para empresas — CONECTA UNIS" },
-      { name: "description", content: "Divulgue vagas de estágio e emprego para estudantes e egressos da Unis." },
-      { property: "og:title", content: "Área para empresas — CONECTA UNIS" },
-      { property: "og:description", content: "Divulgue vagas de estágio e emprego para estudantes e egressos da Unis." },
+      { title: "Publicar oportunidades — CONECTA UNIS" },
+      { name: "description", content: "Publique vagas e acompanhe as candidaturas da comunidade Unis." },
+      { property: "og:title", content: "Publicar oportunidades — CONECTA UNIS" },
+      { property: "og:description", content: "Publique vagas e acompanhe as candidaturas da comunidade Unis." },
     ],
   }),
   component: CompanyArea,
 });
 
 const steps = [
-  { icon: Building2, title: "Cadastre sua empresa", text: "Informe dados institucionais e de contato." },
-  { icon: FileText, title: "Publique a vaga", text: "Descreva atividades, requisitos e benefícios." },
-  { icon: Users, title: "Receba candidaturas", text: "Candidatos autorizam o compartilhamento dos seus dados." },
+  { icon: Building2, title: "Acesse sua conta", text: "Empresas e professores publicam oportunidades pelo perfil verificado." },
+  { icon: FileText, title: "Publique a vaga", text: "Informe atividades, requisitos, jornada e local de trabalho." },
+  { icon: MessageCircle, title: "Acompanhe candidaturas", text: "Veja os dados compartilhados com consentimento e converse com cada candidato." },
 ];
 
 function CompanyArea() {
-  const [sent, setSent] = useState(false);
-  const [title, setTitle] = useState("");
-  const [touched, setTouched] = useState(false);
-  const invalid = touched && title.trim().length < 3;
+  const { session, ready } = useSession();
+  const role = useQuery({ queryKey: ["my-role"], queryFn: getMyRole, enabled: ready && !!session });
+  const destination = !session ? "/auth" : role.data === "admin" ? "/admin" : role.data === null ? "/cadastro" : role.data === "visitor" ? "/candidaturas" : "/publicar";
+  const action = !session ? "Entrar para publicar" : role.data === "admin" ? "Abrir painel do diretor" : role.data === null ? "Completar cadastro" : role.data === "visitor" ? "Ver minhas candidaturas" : "Abrir área de publicação";
+
   return (
     <>
-      <PageHeader eyebrow="Para empresas" title="Publique vagas para talentos da Unis" description="O acesso empresarial com login será disponibilizado em breve. Abaixo, uma prévia do fluxo de publicação." />
+      <PageHeader eyebrow="Para empresas e professores" title="Publique oportunidades para talentos da Unis" description="Anuncie vagas, receba candidaturas e converse com os candidatos em uma área privada." />
       <div className="container-page grid gap-8 py-10 lg:grid-cols-[1fr_420px]">
         <ol className="space-y-4">
-          {steps.map(({ icon: Icon, title: t, text }, i) => (
-            <li key={t} className="flex gap-4 rounded-xl border bg-card p-5 shadow-card">
+          {steps.map(({ icon: Icon, title, text }, index) => (
+            <li key={title} className="flex gap-4 rounded-xl border bg-card p-5 shadow-card">
               <span className="grid h-11 w-11 shrink-0 place-items-center rounded-lg bg-brand-purple-soft text-brand-purple"><Icon className="h-5 w-5" /></span>
-              <div><p className="text-xs font-semibold text-muted-foreground">Etapa {i + 1}</p><h2 className="font-bold">{t}</h2><p className="text-sm text-muted-foreground">{text}</p></div>
+              <div><p className="text-xs font-semibold text-muted-foreground">Etapa {index + 1}</p><h2 className="font-bold">{title}</h2><p className="text-sm text-muted-foreground">{text}</p></div>
             </li>
           ))}
         </ol>
-        <section className="rounded-xl border bg-card p-6 shadow-card" aria-labelledby="pub-title">
-          <h2 id="pub-title" className="text-lg font-bold">Prévia: nova vaga</h2>
-          {/* INTEGRAÇÃO FUTURA: POST /api/vagas com autenticação da empresa. */}
-          {sent ? (
-            <div className="mt-4 rounded-lg bg-success-soft p-4 text-sm" aria-live="polite">
-              <CheckCircle2 className="h-5 w-5 text-success" />
-              <p className="mt-2 font-semibold">Prévia concluída</p>
-              <p className="text-muted-foreground">Nenhuma vaga foi publicada — esta é apenas uma demonstração.</p>
-              <Button variant="outline" className="mt-3" onClick={() => { setSent(false); setTitle(""); setTouched(false); }}>Nova prévia</Button>
-            </div>
-          ) : (
-            <form className="mt-4 space-y-4" noValidate onSubmit={(e) => { e.preventDefault(); setTouched(true); if (title.trim().length >= 3) { setSent(true); toast.success("Prévia gerada (demonstração)"); } }}>
-              <div>
-                <label htmlFor="vaga-titulo" className="text-sm font-medium">Título da vaga</label>
-                <input id="vaga-titulo" value={title} onChange={(e) => setTitle(e.target.value)} onBlur={() => setTouched(true)} aria-invalid={invalid} aria-describedby={invalid ? "vaga-erro" : undefined} className="mt-1 h-11 w-full rounded-md border bg-surface px-3 outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 aria-invalid:border-destructive" placeholder="Ex.: Estagiário de Marketing" />
-                {invalid && <p id="vaga-erro" className="mt-1 text-sm text-destructive">Informe um título com pelo menos 3 caracteres.</p>}
-              </div>
-              <div>
-                <label htmlFor="vaga-tipo" className="text-sm font-medium">Tipo</label>
-                <select id="vaga-tipo" className="mt-1 h-11 w-full rounded-md border bg-surface px-3"><option>Estágio</option><option>Emprego</option></select>
-              </div>
-              <Button type="submit" className="w-full" size="lg">Gerar prévia</Button>
-            </form>
-          )}
+        <section className="rounded-xl border bg-card p-6 shadow-card" aria-labelledby="publish-title">
+          <h2 id="publish-title" className="text-lg font-bold">Acesso à publicação</h2>
+          <p className="mt-2 text-sm text-muted-foreground">Empresas e professores podem publicar vagas. Professores também podem anunciar eventos; diretores gerenciam as publicações pelo painel.</p>
+          {ready && session && role.isLoading ? <Button size="lg" className="mt-6 w-full" disabled>Carregando…</Button> : <Button asChild size="lg" className="mt-6 w-full"><Link to={destination}>{action}<ArrowRight className="h-4 w-4" /></Link></Button>}
+          {session && role.data === "company" && <Button asChild variant="outline" className="mt-3 w-full"><Link to="/candidaturas"><Users className="h-4 w-4" /> Ver candidaturas recebidas</Link></Button>}
+          {session && role.data === "professor" && <Button asChild variant="outline" className="mt-3 w-full"><Link to="/candidaturas"><Users className="h-4 w-4" /> Ver candidaturas e conversas</Link></Button>}
         </section>
       </div>
     </>

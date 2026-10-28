@@ -1,9 +1,12 @@
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { CheckCircle2, Clock, MapPin, Video } from "lucide-react";
-import { useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { useSession } from "@/hooks/use-session";
 import { formatEventDate } from "@/lib/jobs";
+import { storeAuthReturn } from "@/lib/auth-return";
+import { getMyEventInterestIds, getMyRole, registerForEvent } from "@/services/api";
 import type { CareerEvent } from "@/types";
 
 function DateBlock({ iso }: { iso: string }) {
@@ -38,17 +41,50 @@ export function EventCardCompact({ event }: { event: CareerEvent }) {
 }
 
 export function useEventInterest() {
-  const [interested, setInterested] = useState<string[]>([]);
+  const { session, ready } = useSession();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const interests = useQuery({
+    queryKey: ["my-event-interests", session?.user.id],
+    queryFn: getMyEventInterestIds,
+    enabled: ready && !!session,
+  });
+  const role = useQuery({ queryKey: ["my-role"], queryFn: getMyRole, enabled: ready && !!session });
+  const registration = useMutation({
+    mutationFn: registerForEvent,
+    onSuccess: async () => {
+      toast.success("Inscrição no evento confirmada.");
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["my-event-interests"] }),
+        queryClient.invalidateQueries({ queryKey: ["my-event-registrations"] }),
+      ]);
+    },
+    onError: (error) => toast.error(error instanceof Error ? error.message : "Não foi possível confirmar sua inscrição."),
+  });
   const mark = (e: CareerEvent) => {
-    setInterested((p) => (p.includes(e.id) ? p : [...p, e.id]));
-    toast.success("Interesse registrado (demonstração)", {
-      description: `${e.title} — nenhuma inscrição foi enviada a um servidor.`,
-    });
+    if (!ready) return;
+    if (!session) {
+      toast.info("Entre na sua conta de aluno ou professor para se inscrever.");
+      storeAuthReturn(`/eventos/${e.id}`);
+      navigate({ to: "/auth" });
+      return;
+    }
+    if (role.isLoading || !ready) return;
+    if (role.data == null) {
+      storeAuthReturn(`/eventos/${e.id}`);
+      navigate({ to: "/cadastro" });
+      return;
+    }
+    if (role.data !== "visitor" && role.data !== "professor") {
+      toast.error("A inscrição em eventos está disponível para alunos e professores.");
+      return;
+    }
+    registration.mutate(e.id);
   };
-  return { interested, mark };
+  return { interested: interests.data ?? [], mark, registering: registration.isPending ? registration.variables : null };
 }
 
-export function EventCard({ event, interested, onInterest }: { event: CareerEvent; interested: boolean; onInterest: () => void }) {
+export function EventCard({ event, interested, onInterest, registering = false }: { event: CareerEvent; interested: boolean; onInterest: () => void; registering?: boolean }) {
   const d = formatEventDate(event.date);
   return (
     <article className="flex h-full flex-col rounded-xl border bg-card p-5 shadow-card">
@@ -70,8 +106,8 @@ export function EventCard({ event, interested, onInterest }: { event: CareerEven
         <Button asChild variant="outline">
           <Link to="/eventos/$id" params={{ id: event.id }}>Ver detalhes</Link>
         </Button>
-        <Button onClick={onInterest} disabled={interested} variant={interested ? "secondary" : "default"}>
-          {interested ? (<><CheckCircle2 className="h-4 w-4" /> Interesse demonstrado</>) : "Demonstrar interesse"}
+        <Button onClick={onInterest} disabled={interested || registering} variant={interested ? "secondary" : "default"}>
+          {interested ? (<><CheckCircle2 className="h-4 w-4" /> Inscrição confirmada</>) : registering ? "Inscrevendo…" : "Inscrever-se"}
         </Button>
       </div>
     </article>

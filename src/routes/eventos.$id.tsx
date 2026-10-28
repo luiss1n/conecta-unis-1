@@ -27,7 +27,7 @@ export const Route = createFileRoute("/eventos/$id")({
 
 function EventPage() {
   const { event } = Route.useLoaderData();
-  const { interested, mark } = useEventInterest();
+  const { interested, mark, registering } = useEventInterest();
   const d = formatEventDate(event.date);
   const done = interested.includes(event.id);
   return (
@@ -50,12 +50,12 @@ function EventPage() {
         </ul>
         <p className="mt-6 leading-relaxed text-muted-foreground">{event.description}</p>
         <div className="mt-8 flex flex-wrap gap-3">
-          <Button size="lg" onClick={() => mark(event)} disabled={done}>
-            {done ? (<><CheckCircle2 className="h-4 w-4" /> Interesse demonstrado</>) : "Inscrever-se"}
+          <Button size="lg" onClick={() => mark(event)} disabled={done || registering === event.id}>
+            {done ? (<><CheckCircle2 className="h-4 w-4" /> Inscrição confirmada</>) : registering === event.id ? "Inscrevendo…" : "Inscrever-se"}
           </Button>
           <Button asChild size="lg" variant="outline"><Link to="/eventos">Outros eventos</Link></Button>
         </div>
-        {done && <p className="mt-3 text-sm text-muted-foreground" aria-live="polite">Demonstração: nenhuma inscrição foi registrada em servidor.</p>}
+        {done && <p className="mt-3 text-sm text-muted-foreground" aria-live="polite">Sua inscrição foi salva e pode ser consultada na área de candidaturas.</p>}
       </article>
     </div>
   );

@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
+import { consumeAuthReturn } from "@/lib/auth-return";
 
 export const Route = createFileRoute("/_authenticated/cadastro")({
   head: () => ({
@@ -113,7 +114,9 @@ function Registration() {
     toast.success("Cadastro salvo!");
     qc.invalidateQueries({ queryKey: ["registration"] });
     qc.invalidateQueries({ queryKey: ["my-profile"] });
-    navigate({ to: "/perfil" });
+    const returnTo = consumeAuthReturn();
+    if (returnTo) window.location.assign(returnTo);
+    else navigate({ to: "/perfil" });
   }
 
   return (
@@ -122,7 +125,7 @@ function Registration() {
       <p className="mt-1 text-sm text-muted-foreground">Conta: {data.email}</p>
 
       <div className="mt-8 grid gap-3 sm:grid-cols-3">
-        {([["company", "Sou empresa", "Empresa", Building2], ["visitor", "Sou visitante", "Perfil pessoal", UserRound], ["professor", "Sou professor", "Perfil acadêmico", GraduationCap]] as const).map(([k, t, s, Icon]) => (
+        {([["company", "Sou empresa", "Empresa", Building2], ["visitor", "Sou aluno", "Perfil de aluno", UserRound], ["professor", "Sou professor", "Perfil acadêmico", GraduationCap]] as const).map(([k, t, s, Icon]) => (
           <Button variant="outline"
             key={k}
             type="button"

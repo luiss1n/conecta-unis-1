@@ -3,10 +3,9 @@ import { Briefcase, CalendarDays, CheckCircle2, ChevronRight, Clock, Gift, MapPi
 import type { ReactNode } from "react";
 import { CompanyAvatar } from "@/components/common/CompanyAvatar";
 import { ApplicationConsent } from "@/components/jobs/ApplicationConsent";
-import { CandidateProfileCard } from "@/components/jobs/CandidateProfileCard";
 import { JobTypeBadge } from "@/components/jobs/JobCard";
 import { formatDate, jobPublisher, modeLabel, scheduleLabel, typeLabel } from "@/lib/jobs";
-import { getCandidateProfile, getJob } from "@/services/api";
+import { getJob } from "@/services/api";
 
 export const Route = createFileRoute("/vagas/$slug")({
   loader: async ({ params }) => {
@@ -58,9 +57,6 @@ function List({ items }: { items: string[] }) {
     </ul>
   );
 }
-
-// Simulação visual simples e estável por vaga — NÃO é um algoritmo de seleção.
-const simulatedMatch = (slug: string) => 62 + (slug.length * 7) % 33;
 
 function JobDetails() {
   const { job } = Route.useLoaderData();
@@ -125,8 +121,7 @@ function JobDetails() {
           )}
         </div>
         <aside className="space-y-6 lg:sticky lg:top-24 lg:self-start">
-          <CandidateProfileCard profile={getCandidateProfile()} match={simulatedMatch(job.slug)} />
-          <ApplicationConsent companyName={publisher} />
+          <ApplicationConsent companyName={publisher} jobSlug={job.slug} />
         </aside>
       </div>
     </div>

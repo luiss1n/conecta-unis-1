@@ -14,6 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      application_messages: {
+        Row: { application_id: string; body: string; created_at: string; id: string; sender_id: string }
+        Insert: { application_id: string; body: string; created_at?: string; id?: string; sender_id: string }
+        Update: { application_id?: string; body?: string; created_at?: string; id?: string; sender_id?: string }
+        Relationships: [
+          { foreignKeyName: "application_messages_application_id_fkey"; columns: ["application_id"]; isOneToOne: false; referencedRelation: "job_applications"; referencedColumns: ["id"] },
+          { foreignKeyName: "application_messages_sender_id_fkey"; columns: ["sender_id"]; isOneToOne: false; referencedRelation: "profiles"; referencedColumns: ["id"] },
+        ]
+      }
+      job_applications: {
+        Row: {
+          applicant_city: string; applicant_education: string; applicant_email: string; applicant_headline: string;
+          applicant_id: string; applicant_institution: string; applicant_name: string; applicant_phone: string;
+          applicant_resume_name: string; applicant_resume_path: string; consent_at: string; cover_message: string;
+          created_at: string; id: string; job_slug: string; status: string; updated_at: string
+        }
+        Insert: {
+          applicant_city?: string; applicant_education?: string; applicant_email: string; applicant_headline?: string;
+          applicant_id: string; applicant_institution?: string; applicant_name: string; applicant_phone?: string;
+          applicant_resume_name?: string; applicant_resume_path?: string; consent_at: string; cover_message?: string;
+          created_at?: string; id?: string; job_slug: string; status?: string; updated_at?: string
+        }
+        Update: {
+          applicant_city?: string; applicant_education?: string; applicant_email?: string; applicant_headline?: string;
+          applicant_id?: string; applicant_institution?: string; applicant_name?: string; applicant_phone?: string;
+          applicant_resume_name?: string; applicant_resume_path?: string; consent_at?: string; cover_message?: string;
+          created_at?: string; id?: string; job_slug?: string; status?: string; updated_at?: string
+        }
+        Relationships: [
+          { foreignKeyName: "job_applications_applicant_id_fkey"; columns: ["applicant_id"]; isOneToOne: false; referencedRelation: "profiles"; referencedColumns: ["id"] },
+          { foreignKeyName: "job_applications_job_slug_fkey"; columns: ["job_slug"]; isOneToOne: false; referencedRelation: "jobs"; referencedColumns: ["slug"] },
+        ]
+      }
       companies: {
         Row: {
           about: string
@@ -365,6 +398,8 @@ export type Database = {
         Returns: boolean
       }
       save_registration: { Args: { payload: Json }; Returns: undefined }
+      submit_job_application: { Args: { _consent: boolean; _cover_message?: string; _job_slug: string }; Returns: string }
+      update_job_application_status: { Args: { _application_id: string; _status: string }; Returns: undefined }
     }
     Enums: {
       app_role: "company" | "professor" | "visitor" | "admin"

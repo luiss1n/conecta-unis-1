@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState, type FormEvent } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useSession } from "@/hooks/use-session";
+import { consumeAuthReturn, getAuthCallbackUrl } from "@/lib/auth-return";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/auth")({
@@ -31,16 +32,15 @@ const signupCreds = creds.extend({
 type Mode = "entrar" | "criar" | "recuperar";
 
 function AuthPage() {
-  const navigate = useNavigate();
   const [mode, setMode] = useState<Mode>("entrar");
   const [busy, setBusy] = useState(false);
   const [sent, setSent] = useState<string | null>(null);
   const { session } = useSession();
 
-  // Depois do retorno do Google (ou se já houver sessão), segue para o cadastro.
+  // Depois da autenticação, retorna à oportunidade de origem quando houver uma.
   useEffect(() => {
-    if (session) navigate({ to: "/cadastro" });
-  }, [session, navigate]);
+    if (session) window.location.replace(consumeAuthReturn() ?? "/cadastro");
+  }, [session]);
 
   async function submit(e: FormEvent<HTMLFormElement>): Promise<void> {
     e.preventDefault();
@@ -63,7 +63,7 @@ function AuthPage() {
       if (mode === "criar") {
         const { data, error } = await supabase.auth.signUp({
           ...p.data,
-          options: { emailRedirectTo: window.location.origin },
+          options: { emailRedirectTo: getAuthCallbackUrl() },
         });
         if (error) return void toast.error(/weak|pwned|guess/i.test(error.message) ? "Essa senha é muito comum e fácil de adivinhar. Escolha uma senha mais forte, misturando letras, números e símbolos." : "Não foi possível criar a conta. Verifique os dados ou tente novamente.");
         if (!data.session) return void setSent("Conta criada! Confirme pelo link enviado ao seu e-mail e depois entre.");
@@ -71,7 +71,6 @@ function AuthPage() {
         const { error } = await supabase.auth.signInWithPassword(p.data);
         if (error) return void toast.error("E-mail ou senha incorretos.");
       }
-      navigate({ to: "/cadastro" });
     } finally {
       setBusy(false);
     }
@@ -81,7 +80,7 @@ function AuthPage() {
     // Requer o provedor Google habilitado em Supabase > Authentication > Providers.
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
-      options: { redirectTo: `${window.location.origin}/auth` },
+      options: { redirectTo: getAuthCallbackUrl() },
     });
     if (error) toast.error("Não foi possível entrar com Google.");
   }
