@@ -1,14 +1,13 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowUpRight, Bell, CheckCheck, Menu, Plus, ShieldCheck } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import { demoNotifications } from "@/data/demo";
 import { useSession } from "@/hooks/use-session";
 import { supabase } from "@/integrations/supabase/client";
-import { getMyRole } from "@/services/api";
+import { getMyNotifications, getMyRole, markAllNotificationsRead, markNotificationRead } from "@/services/api";
 import symbolLogo from "@/assets/conecta-unis-symbol.jpeg";
 import wordmarkLogo from "@/assets/conecta-unis-wordmark.png";
 
@@ -36,16 +35,21 @@ export function Logo({ dark = false }: { dark?: boolean }) {
 
 export function Header() {
   const [open, setOpen] = useState(false);
-  const [readNotifications, setReadNotifications] = useState<Set<string>>(() => new Set());
   const { session } = useSession();
   const navigate = useNavigate();
   const qc = useQueryClient();
   const { data: role } = useQuery({ queryKey: ["my-role"], queryFn: getMyRole, enabled: !!session });
+  const { data: notifications = [] } = useQuery({ queryKey: ["my-notifications", session?.user.id], queryFn: getMyNotifications, enabled: !!session, refetchInterval: 30_000 });
   const isAdmin = role === "admin";
   const canPublish = role === "company" || role === "professor";
-  const unreadCount = demoNotifications.length - readNotifications.size;
-  function markAsRead(id: string) {
-    setReadNotifications((current) => new Set(current).add(id));
+  const unreadCount = useMemo(() => notifications.filter((notification) => !notification.read_at).length, [notifications]);
+  async function markAsRead(id: string) {
+    await markNotificationRead(id);
+    await qc.invalidateQueries({ queryKey: ["my-notifications", session?.user.id] });
+  }
+  async function markAllAsRead() {
+    await markAllNotificationsRead();
+    await qc.invalidateQueries({ queryKey: ["my-notifications", session?.user.id] });
   }
   async function signOut() {
     await qc.cancelQueries();
@@ -72,7 +76,7 @@ export function Header() {
           ))}
         </nav>
         <div className="ml-auto flex items-center gap-1.5 sm:gap-2">
-          <Popover>
+          {session && <Popover>
             <PopoverTrigger asChild>
               <Button
                 variant="ghost"
@@ -102,32 +106,37 @@ export function Header() {
                     variant="ghost"
                     size="sm"
                     className="h-auto gap-1.5 px-2 py-1 text-xs text-primary"
-                    onClick={() => setReadNotifications(new Set(demoNotifications.map((notification) => notification.id)))}
+                    onClick={() => void markAllAsRead()}
                   >
                     <CheckCheck className="h-3.5 w-3.5" /> Marcar todas como lidas
                   </Button>
                 )}
               </div>
               <ul className="max-h-[min(24rem,65vh)] divide-y overflow-y-auto">
-                {demoNotifications.map((n) => (
+                {notifications.length === 0 && <li className="px-4 py-8 text-center text-sm text-muted-foreground">Você ainda não tem notificações.</li>}
+                {notifications.map((n) => (
                   <li key={n.id}>
-                    <Link
-                      to={n.to}
-                      onClick={() => markAsRead(n.id)}
-                      className={`group flex items-start gap-3 px-4 py-3.5 transition-colors hover:bg-muted focus-visible:outline-2 focus-visible:outline-ring ${readNotifications.has(n.id) ? "" : "bg-primary-soft/60"}`}
+                    <a
+                      href={n.target_path}
+                      onClick={async (event) => {
+                        event.preventDefault();
+                        if (!n.read_at) await markAsRead(n.id);
+                        window.location.assign(n.target_path);
+                      }}
+                      className={`group flex items-start gap-3 px-4 py-3.5 transition-colors hover:bg-muted focus-visible:outline-2 focus-visible:outline-ring ${n.read_at ? "" : "bg-primary-soft/60"}`}
                     >
-                      <span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${readNotifications.has(n.id) ? "bg-transparent" : "bg-brand-purple"}`} aria-hidden="true" />
+                      <span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${n.read_at ? "bg-transparent" : "bg-brand-purple"}`} aria-hidden="true" />
                       <span className="min-w-0 flex-1">
                         <span className="block text-sm font-medium">{n.title}</span>
                         <span className="mt-1 block text-xs leading-relaxed text-muted-foreground">{n.body}</span>
                       </span>
                       <ArrowUpRight className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100" aria-hidden="true" />
-                    </Link>
+                    </a>
                   </li>
                 ))}
               </ul>
             </PopoverContent>
-          </Popover>
+          </Popover>}
           {session ? (
             <>
               {canPublish && <Button asChild className="hidden sm:inline-flex"><Link to="/publicar"><Plus className="h-4 w-4" /> Publicar vaga</Link></Button>}

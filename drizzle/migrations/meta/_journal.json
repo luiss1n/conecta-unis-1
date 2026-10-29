@@ -57,6 +57,13 @@
       "when": 1793217720000,
       "tag": "0008_username_validation",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1793217780000,
+      "tag": "0009_platform_stats_notifications_and_registration_rules",
+      "breakpoints": true
     }
   ]
 }

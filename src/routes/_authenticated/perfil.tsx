@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { getMyProfile, saveMyProfile, uploadProfileFile, removeProfileFile } from "@/services/api";
-import { profileSchema, profileKindLabels, type ProfileFileKind } from "@/lib/profile";
+import { profileSchema, profileKindLabels, formatBrazilianPhone, type ProfileFileKind } from "@/lib/profile";
 
 export const Route = createFileRoute("/_authenticated/perfil")({
   head: () => ({ meta: [
@@ -117,7 +117,7 @@ function Profile() {
           {busy && <p role="status" className="mt-4 text-sm text-primary">Salvando…</p>}
         </aside>
       </div>
-      <Dialog open={editing} onOpenChange={setEditing}><DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-2xl"><DialogHeader><DialogTitle>Editar perfil</DialogTitle></DialogHeader><form onSubmit={save} className="space-y-5"><div className="grid gap-4 sm:grid-cols-2">{fields.map(([key, label, max]) => <div key={key} className={key === "headline" || key === "address" ? "space-y-1.5 sm:col-span-2" : "space-y-1.5"}><Label htmlFor={`profile-${key}`}>{label}</Label><Input id={`profile-${key}`} name={key} defaultValue={p[key]} maxLength={max} required={key === "display_name" || key === "city"} /></div>)}</div><div className="space-y-1.5"><Label htmlFor="profile-bio">Sobre</Label><Textarea id="profile-bio" name="bio" defaultValue={p.bio} maxLength={2000} rows={4} /></div><div className="flex justify-end gap-2"><Button type="button" variant="outline" onClick={() => setEditing(false)}>Cancelar</Button><Button type="submit" disabled={busy}>{busy ? "Salvando…" : "Salvar alterações"}</Button></div></form></DialogContent></Dialog>
+      <Dialog open={editing} onOpenChange={setEditing}><DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-2xl"><DialogHeader><DialogTitle>Editar perfil</DialogTitle></DialogHeader><form onSubmit={save} className="space-y-5"><div className="grid gap-4 sm:grid-cols-2">{fields.map(([key, label, max]) => <div key={key} className={key === "headline" || key === "address" ? "space-y-1.5 sm:col-span-2" : "space-y-1.5"}><Label htmlFor={`profile-${key}`}>{label}</Label><Input id={`profile-${key}`} name={key} defaultValue={key === "phone" ? formatBrazilianPhone(p.phone) : p[key]} maxLength={key === "phone" ? 15 : max} inputMode={key === "phone" ? "tel" : undefined} placeholder={key === "phone" ? "(XX) XXXXX-XXXX" : undefined} onChange={key === "phone" ? (event) => { event.currentTarget.value = formatBrazilianPhone(event.currentTarget.value); } : undefined} required={key === "display_name" || key === "city"} /></div>)}</div><div className="space-y-1.5"><Label htmlFor="profile-bio">Sobre</Label><Textarea id="profile-bio" name="bio" defaultValue={p.bio} maxLength={2000} rows={4} /></div><div className="flex justify-end gap-2"><Button type="button" variant="outline" onClick={() => setEditing(false)}>Cancelar</Button><Button type="submit" disabled={busy}>{busy ? "Salvando…" : "Salvar alterações"}</Button></div></form></DialogContent></Dialog>
     </div>
   );
 }

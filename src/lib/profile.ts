@@ -1,5 +1,13 @@
 import { z } from "zod";
 
+export function formatBrazilianPhone(value: string): string {
+  const digits = value.replace(/\D/g, "").slice(0, 11);
+  if (!digits) return "";
+  if (digits.length <= 2) return `(${digits}`;
+  if (digits.length <= 7) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
+  return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
+}
+
 export const profileSchema = z.object({
   display_name: z.string().trim().min(2, "Informe um nome com pelo menos 2 letras").max(100),
   headline: z.string().trim().max(160),
@@ -9,7 +17,7 @@ export const profileSchema = z.object({
   country: z.string().trim().max(100),
   education: z.string().trim().max(160),
   institution: z.string().trim().max(160),
-  phone: z.string().trim().max(30),
+  phone: z.string().trim().regex(/^(?:\(\d{2}\) \d{5}-\d{4})?$/, "Informe o telefone no formato (XX) XXXXX-XXXX."),
   bio: z.string().trim().max(2000),
 });
 

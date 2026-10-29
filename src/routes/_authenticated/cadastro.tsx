@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { consumeAuthReturn } from "@/lib/auth-return";
+import { formatBrazilianPhone } from "@/lib/profile";
 
 export const Route = createFileRoute("/_authenticated/cadastro")({
   head: () => ({
@@ -26,18 +27,18 @@ export const Route = createFileRoute("/_authenticated/cadastro")({
 type Kind = "company" | "professor" | "visitor";
 
 function normalizeUsername(value: string): string {
-  return value.trim().normalize("NFC").toLocaleLowerCase("pt-BR");
+  return value.trim().normalize("NFC").slice(0, 25).toLocaleLowerCase("pt-BR");
 }
 
 const usernameSchema = z.string().transform(normalizeUsername)
-  .refine((value) => value.length >= 3 && value.length <= 50, "Use de 3 a 50 caracteres.")
+  .refine((value) => value.length >= 3 && value.length <= 25, "Use de 3 a 25 caracteres.")
   .refine((value) => /^[\p{L}\p{M}\p{N}\p{P}]+$/u.test(value) && /[\p{L}\p{N}]/u.test(value), "Use letras, números e pontuação, sem espaços ou emojis.");
 
 const base = z.object({
   display_name: z.string().trim().min(2, "Informe seu nome").max(100),
   username: usernameSchema,
   city: z.string().trim().min(2, "Informe a cidade").max(100),
-  phone: z.string().trim().max(30),
+  phone: z.string().trim().regex(/^(?:\(\d{2}\) \d{5}-\d{4})?$/, "Informe o telefone no formato (XX) XXXXX-XXXX."),
   bio: z.string().trim().max(2000),
 });
 const company = base.extend({
@@ -88,10 +89,15 @@ function UsernameField({ defaultValue }: { defaultValue: string | undefined }) {
   return (
     <div className="space-y-1.5">
       <Label htmlFor="username">Nome de usuário</Label>
-      <Input id="username" name="username" value={username} onChange={(event) => setUsername(normalizeUsername(event.target.value))} required minLength={3} maxLength={50} autoCapitalize="none" autoCorrect="off" spellCheck={false} placeholder="ex.: maria.silva" aria-describedby="username-help" />
-      <p id="username-help" className="text-xs text-muted-foreground">Use de 3 a 50 caracteres, sem espaços. Letras acentuadas, números e pontuação são aceitos.</p>
+      <Input id="username" name="username" value={username} onChange={(event) => setUsername(normalizeUsername(event.target.value))} required minLength={3} maxLength={25} autoCapitalize="none" autoCorrect="off" spellCheck={false} placeholder="ex.: maria.silva" aria-describedby="username-help" />
+      <p id="username-help" className="text-xs text-muted-foreground">Use de 3 a 25 caracteres, sem espaços. Letras acentuadas, números e pontuação são aceitos.</p>
     </div>
   );
+}
+
+function PhoneField({ defaultValue }: { defaultValue: string | undefined }) {
+  const [phone, setPhone] = useState(() => formatBrazilianPhone(defaultValue ?? ""));
+  return <div className="space-y-1.5"><Label htmlFor="phone">Telefone</Label><Input id="phone" name="phone" value={phone} onChange={(event) => setPhone(formatBrazilianPhone(event.target.value))} placeholder="(XX) XXXXX-XXXX" maxLength={15} inputMode="tel" /></div>;
 }
 
 function Registration() {
@@ -168,7 +174,7 @@ function Registration() {
             <Field name="display_name" label="Nome completo" d={d} required />
             <UsernameField defaultValue={d.username} />
             <Field name="city" label="Cidade" d={d} required />
-            <Field name="phone" label="Telefone" d={d} />
+            <PhoneField defaultValue={d.phone} />
             <div className="sm:col-span-2"><Field name="bio" label={kind === "company" ? "Sobre a empresa" : "Sobre você"} d={d} area /></div>
           </section>
           {kind === "company" ? (

@@ -17,6 +17,33 @@ type CompanyRow = Database["public"]["Tables"]["companies"]["Row"];
 type EventRow = Database["public"]["Tables"]["events"]["Row"];
 export type JobApplication = Database["public"]["Tables"]["job_applications"]["Row"];
 export type ApplicationMessage = Database["public"]["Tables"]["application_messages"]["Row"];
+export type UserNotification = Database["public"]["Tables"]["notifications"]["Row"];
+export type PlatformStats = { users: number; jobs: number; companies: number; events: number };
+
+export async function getPlatformStats(): Promise<PlatformStats> {
+  const { data, error } = await supabase.rpc("get_platform_stats");
+  if (error) throw error;
+  return data as unknown as PlatformStats;
+}
+
+export async function getMyNotifications(): Promise<UserNotification[]> {
+  const user = await requireUser();
+  const { data, error } = await supabase.from("notifications").select("*").eq("recipient_id", user.id).order("created_at", { ascending: false }).limit(50);
+  if (error) throw new Error("Não foi possível carregar suas notificações.");
+  return data ?? [];
+}
+
+export async function markNotificationRead(id: string): Promise<void> {
+  const user = await requireUser();
+  const { error } = await supabase.from("notifications").update({ read_at: new Date().toISOString() }).eq("id", id).eq("recipient_id", user.id).is("read_at", null);
+  if (error) throw new Error("Não foi possível atualizar a notificação.");
+}
+
+export async function markAllNotificationsRead(): Promise<void> {
+  const user = await requireUser();
+  const { error } = await supabase.from("notifications").update({ read_at: new Date().toISOString() }).eq("recipient_id", user.id).is("read_at", null);
+  if (error) throw new Error("Não foi possível atualizar as notificações.");
+}
 
 const TONES: readonly string[] = ["blue", "purple", "green", "amber"];
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;

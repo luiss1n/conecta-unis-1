@@ -14,6 +14,12 @@ export type Database = {
   }
   public: {
     Tables: {
+      notifications: {
+        Row: { actor_id: string | null; body: string; created_at: string; id: string; read_at: string | null; recipient_id: string; target_path: string; title: string }
+        Insert: { actor_id?: string | null; body: string; created_at?: string; id?: string; read_at?: string | null; recipient_id: string; target_path?: string; title: string }
+        Update: { actor_id?: string | null; body?: string; created_at?: string; id?: string; read_at?: string | null; recipient_id?: string; target_path?: string; title?: string }
+        Relationships: []
+      }
       application_messages: {
         Row: { application_id: string; body: string; created_at: string; id: string; sender_id: string }
         Insert: { application_id: string; body: string; created_at?: string; id?: string; sender_id: string }
@@ -390,6 +396,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_platform_stats: { Args: Record<PropertyKey, never>; Returns: Json }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
