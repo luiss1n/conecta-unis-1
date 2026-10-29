@@ -296,10 +296,25 @@ export async function getMyProfile() {
     if (error) throw new Error("Não foi possível carregar os arquivos do perfil.");
     return data.signedUrl;
   }
-  const [avatarUrl, bannerUrl, resumeUrl] = await Promise.all([
+  const [storedAvatarUrl, bannerUrl, resumeUrl] = await Promise.all([
     signed(profile.data.avatar_path), signed(profile.data.banner_path), signed(profile.data.resume_path),
   ]);
+  const googleAvatarUrl = getGoogleAvatarUrl(user.user_metadata);
+  const avatarUrl = storedAvatarUrl ?? googleAvatarUrl;
   return { profile: profile.data, role: role.data?.role ?? null, company: company.data, professor: professor.data, avatarUrl, bannerUrl, resumeUrl, email: user.email ?? "" };
+}
+
+function getGoogleAvatarUrl(metadata: Record<string, unknown>): string | null {
+  const candidate = metadata.avatar_url ?? metadata.picture;
+  if (typeof candidate !== "string") return null;
+  try {
+    const url = new URL(candidate);
+    const isGoogleImageHost = url.protocol === "https:" &&
+      (url.hostname === "googleusercontent.com" || url.hostname.endsWith(".googleusercontent.com"));
+    return isGoogleImageHost ? url.toString() : null;
+  } catch {
+    return null;
+  }
 }
 
 export async function saveMyProfile(values: ProfileValues) {
