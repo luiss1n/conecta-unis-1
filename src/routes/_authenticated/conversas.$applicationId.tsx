@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useSession } from "@/hooks/use-session";
-import { getApplicationConversation, getApplicationMessages, getApplicationResumeUrl, sendApplicationMessage, updateApplicationStatus } from "@/services/api";
+import { getApplicationCandidateProfile, getApplicationConversation, getApplicationMessages, getApplicationResumeUrl, sendApplicationMessage, updateApplicationStatus } from "@/services/api";
 
 export const Route = createFileRoute("/_authenticated/conversas/$applicationId")({
   head: () => ({ meta: [
@@ -33,6 +33,11 @@ function ApplicationConversation() {
   const applicationQuery = useQuery({ queryKey: ["application-conversation", applicationId], queryFn: () => getApplicationConversation(applicationId), refetchInterval: 10000 });
   const application = applicationQuery.data?.application;
   const isCandidate = applicationQuery.data?.isCandidate ?? false;
+  const candidateProfileQuery = useQuery({
+    queryKey: ["application-candidate-profile", applicationId],
+    queryFn: () => getApplicationCandidateProfile(applicationId),
+    enabled: !!application,
+  });
   const messagesQuery = useQuery({
     queryKey: ["application-messages", applicationId],
     queryFn: () => getApplicationMessages(applicationId),
@@ -134,12 +139,20 @@ function ApplicationConversation() {
           <div className="flex items-center gap-2"><UserRound className="h-5 w-5 text-primary" /><h2 className="font-bold">{isCandidate ? "Vaga" : "Perfil do candidato"}</h2></div>
           {isCandidate ? <div className="mt-4"><p className="font-semibold">{job.publisherName || job.company?.name || "Anunciante"}</p><p className="mt-1 text-sm text-muted-foreground">{job.city} · {job.type === "estagio" ? "Estágio" : "Emprego"}</p><Button asChild variant="outline" className="mt-4 w-full"><Link to="/vagas/$slug" params={{ slug: job.slug }}>Ver vaga</Link></Button></div> : (
             <div className="mt-4 space-y-3 text-sm">
-              <p className="font-semibold">{application.applicant_name}</p>
+              <div className="flex items-center gap-3">
+                <div className="grid h-12 w-12 shrink-0 place-items-center overflow-hidden rounded-full border bg-primary-soft text-primary">
+                  {candidateProfileQuery.data?.avatarUrl ? <img src={candidateProfileQuery.data.avatarUrl} alt="" className="h-full w-full object-cover" /> : <UserRound className="h-6 w-6" />}
+                </div>
+                <div className="min-w-0">
+                  <p className="break-words font-semibold">{application.applicant_name}</p>
+                  <a className="block break-all text-primary underline-offset-2 hover:underline" href={`mailto:${application.applicant_email}`}>{application.applicant_email}</a>
+                </div>
+              </div>
+              <Button asChild variant="outline" className="w-full"><Link to="/perfil-do-candidato/$applicationId" params={{ applicationId }}>Ver perfil</Link></Button>
               {application.applicant_headline && <p className="text-muted-foreground">{application.applicant_headline}</p>}
               {application.applicant_education && <p><span className="font-medium">Formação:</span> {application.applicant_education}</p>}
               {application.applicant_institution && <p><span className="font-medium">Instituição:</span> {application.applicant_institution}</p>}
               {application.applicant_city && <p><span className="font-medium">Cidade:</span> {application.applicant_city}</p>}
-              <a className="block break-all text-primary underline-offset-2 hover:underline" href={`mailto:${application.applicant_email}`}>{application.applicant_email}</a>
               {application.applicant_phone && <a className="block text-primary underline-offset-2 hover:underline" href={`tel:${application.applicant_phone}`}>{application.applicant_phone}</a>}
               {application.applicant_resume_path && (resumeQuery.data ? <Button asChild variant="outline" className="w-full"><a href={resumeQuery.data} target="_blank" rel="noreferrer"><Download className="h-4 w-4" /> Abrir currículo</a></Button> : resumeQuery.isError ? <p role="alert" className="text-xs text-destructive">Não foi possível abrir o currículo.</p> : <p className="text-xs text-muted-foreground">Carregando currículo…</p>)}
             </div>

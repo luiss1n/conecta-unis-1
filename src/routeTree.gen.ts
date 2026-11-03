@@ -17,6 +17,7 @@ import { Route as PrivacidadeRouteImport } from './routes/privacidade'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as SobreRouteImport } from './routes/sobre'
 import { Route as AuthenticatedCadastroRouteImport } from './routes/_authenticated/cadastro'
+import { Route as AuthenticatedCandidateProfileRouteImport } from './routes/_authenticated/perfil-do-candidato.$applicationId'
 import { Route as AuthenticatedPerfilRouteImport } from './routes/_authenticated/perfil'
 import { Route as AuthenticatedPublicarRouteImport } from './routes/_authenticated/publicar'
 import { Route as EmpresasIndexRouteImport } from './routes/empresas.index'
@@ -63,6 +64,11 @@ const SobreRoute = SobreRouteImport.update({
 const AuthenticatedCadastroRoute = AuthenticatedCadastroRouteImport.update({
   id: '/cadastro',
   path: '/cadastro',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedCandidateProfileRoute = AuthenticatedCandidateProfileRouteImport.update({
+  id: '/perfil-do-candidato/$applicationId',
+  path: '/perfil-do-candidato/$applicationId',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedPerfilRoute = AuthenticatedPerfilRouteImport.update({
@@ -114,6 +120,7 @@ export interface FileRoutesByFullPath {
   '/reset-password': typeof ResetPasswordRoute
   '/sobre': typeof SobreRoute
   '/cadastro': typeof AuthenticatedCadastroRoute
+  '/perfil-do-candidato/$applicationId': typeof AuthenticatedCandidateProfileRoute
   '/perfil': typeof AuthenticatedPerfilRoute
   '/publicar': typeof AuthenticatedPublicarRoute
   '/empresas/$slug': typeof EmpresasSlugRoute
@@ -131,6 +138,7 @@ export interface FileRoutesByTo {
   '/reset-password': typeof ResetPasswordRoute
   '/sobre': typeof SobreRoute
   '/cadastro': typeof AuthenticatedCadastroRoute
+  '/perfil-do-candidato/$applicationId': typeof AuthenticatedCandidateProfileRoute
   '/perfil': typeof AuthenticatedPerfilRoute
   '/publicar': typeof AuthenticatedPublicarRoute
   '/empresas/$slug': typeof EmpresasSlugRoute
@@ -150,6 +158,7 @@ export interface FileRoutesById {
   '/reset-password': typeof ResetPasswordRoute
   '/sobre': typeof SobreRoute
   '/_authenticated/cadastro': typeof AuthenticatedCadastroRoute
+  '/_authenticated/perfil-do-candidato/$applicationId': typeof AuthenticatedCandidateProfileRoute
   '/_authenticated/perfil': typeof AuthenticatedPerfilRoute
   '/_authenticated/publicar': typeof AuthenticatedPublicarRoute
   '/empresas/$slug': typeof EmpresasSlugRoute
@@ -169,6 +178,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/sobre'
     | '/cadastro'
+    | '/perfil-do-candidato/$applicationId'
     | '/perfil'
     | '/publicar'
     | '/empresas/$slug'
@@ -186,6 +196,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/sobre'
     | '/cadastro'
+    | '/perfil-do-candidato/$applicationId'
     | '/perfil'
     | '/publicar'
     | '/empresas/$slug'
@@ -204,6 +215,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/sobre'
     | '/_authenticated/cadastro'
+    | '/_authenticated/perfil-do-candidato/$applicationId'
     | '/_authenticated/perfil'
     | '/_authenticated/publicar'
     | '/empresas/$slug'
@@ -288,6 +300,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedCadastroRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/perfil-do-candidato/$applicationId': {
+      id: '/_authenticated/perfil-do-candidato/$applicationId'
+      path: '/perfil-do-candidato/$applicationId'
+      fullPath: '/perfil-do-candidato/$applicationId'
+      preLoaderRoute: typeof AuthenticatedCandidateProfileRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/perfil': {
       id: '/_authenticated/perfil'
       path: '/perfil'
@@ -349,12 +368,14 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedCadastroRoute: typeof AuthenticatedCadastroRoute
+  AuthenticatedCandidateProfileRoute: typeof AuthenticatedCandidateProfileRoute
   AuthenticatedPerfilRoute: typeof AuthenticatedPerfilRoute
   AuthenticatedPublicarRoute: typeof AuthenticatedPublicarRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedCadastroRoute: AuthenticatedCadastroRoute,
+  AuthenticatedCandidateProfileRoute: AuthenticatedCandidateProfileRoute,
   AuthenticatedPerfilRoute: AuthenticatedPerfilRoute,
   AuthenticatedPublicarRoute: AuthenticatedPublicarRoute,
 }

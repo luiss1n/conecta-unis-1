@@ -19,6 +19,34 @@ export type JobApplication = Database["public"]["Tables"]["job_applications"]["R
 export type ApplicationMessage = Database["public"]["Tables"]["application_messages"]["Row"];
 export type UserNotification = Database["public"]["Tables"]["notifications"]["Row"];
 export type PlatformStats = { users: number; jobs: number; companies: number; events: number };
+export type ApplicationCandidateProfile = {
+  id: string;
+  display_name: string;
+  username: string;
+  email: string;
+  headline: string;
+  education: string;
+  institution: string;
+  city: string;
+  bio: string;
+  avatar_path: string;
+  google_avatar_url: string | null;
+  avatarUrl: string | null;
+};
+
+export async function getApplicationCandidateProfile(applicationId: string): Promise<ApplicationCandidateProfile> {
+  await requireUser();
+  const { data, error } = await supabase.rpc("get_application_candidate_profile", { _application_id: applicationId });
+  if (error || !data) throw new Error("Este perfil não está disponível para sua conta.");
+  const candidate = data as unknown as Omit<ApplicationCandidateProfile, "avatarUrl">;
+  let avatarUrl: string | null = null;
+  if (candidate.avatar_path) {
+    const { data: image, error: imageError } = await supabase.storage.from("profile-photos").createSignedUrl(candidate.avatar_path, 3600);
+    if (!imageError) avatarUrl = image.signedUrl;
+  }
+  avatarUrl ??= getGoogleAvatarUrl({ avatar_url: candidate.google_avatar_url });
+  return { ...candidate, avatarUrl };
+}
 
 export async function getPlatformStats(): Promise<PlatformStats> {
   const { data, error } = await supabase.rpc("get_platform_stats");

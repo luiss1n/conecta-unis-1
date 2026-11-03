@@ -397,6 +397,7 @@ export type Database = {
     }
     Functions: {
       get_platform_stats: { Args: Record<PropertyKey, never>; Returns: Json }
+      get_application_candidate_profile: { Args: { _application_id: string }; Returns: Json }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

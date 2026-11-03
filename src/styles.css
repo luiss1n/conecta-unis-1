@@ -78,11 +78,11 @@
   --card-foreground: oklch(0.22 0.035 268);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.22 0.035 268);
-  --primary: oklch(0.52 0.2 262);
+  --primary: #0A4986;
   --primary-foreground: oklch(0.99 0 0);
-  --primary-soft: oklch(0.955 0.03 262);
-  --brand-purple: oklch(0.62 0.18 250);
-  --brand-purple-soft: oklch(0.955 0.03 250);
+  --primary-soft: #EAF2F9;
+  --brand-purple: #3B6F9F;
+  --brand-purple-soft: #EAF2F9;
   --footer: #0F172A;
   --footer-foreground: oklch(0.98 0.005 250);
   --footer-muted: oklch(0.8 0.025 250);
@@ -101,29 +101,29 @@
   --secondary-foreground: oklch(0.28 0.04 268);
   --muted: oklch(0.96 0.008 264);
   --muted-foreground: oklch(0.5 0.03 264);
-  --accent: oklch(0.955 0.03 262);
-  --accent-foreground: oklch(0.4 0.17 262);
+  --accent: #EAF2F9;
+  --accent-foreground: #0A4986;
   --destructive: oklch(0.577 0.215 27);
   --destructive-foreground: oklch(0.99 0 0);
   --border: oklch(0.915 0.012 264);
   --input: oklch(0.89 0.014 264);
-  --ring: oklch(0.52 0.2 262);
-  --chart-1: oklch(0.52 0.2 262);
+  --ring: #0A4986;
+  --chart-1: #0A4986;
   --chart-2: var(--brand-purple);
   --chart-3: oklch(0.55 0.14 155);
   --chart-4: oklch(0.6 0.14 65);
   --chart-5: oklch(0.6 0.18 20);
   --sidebar: oklch(1 0 0);
   --sidebar-foreground: oklch(0.22 0.035 268);
-  --sidebar-primary: oklch(0.52 0.2 262);
+  --sidebar-primary: #0A4986;
   --sidebar-primary-foreground: oklch(0.99 0 0);
-  --sidebar-accent: oklch(0.955 0.03 262);
-  --sidebar-accent-foreground: oklch(0.4 0.17 262);
+  --sidebar-accent: #EAF2F9;
+  --sidebar-accent-foreground: #0A4986;
   --sidebar-border: oklch(0.915 0.012 264);
-  --sidebar-ring: oklch(0.52 0.2 262);
-  --gradient-brand: linear-gradient(120deg, var(--primary), var(--brand-purple));
+  --sidebar-ring: #0A4986;
+  --gradient-brand: linear-gradient(120deg, #0A4986, #2D6FA8);
   --shadow-card-value: 0 1px 2px oklch(0.22 0.035 268 / 0.04), 0 2px 8px oklch(0.22 0.035 268 / 0.04);
-  --shadow-card-hover-value: 0 4px 10px oklch(0.22 0.035 268 / 0.06), 0 12px 28px -8px oklch(0.52 0.2 262 / 0.18);
+  --shadow-card-hover-value: 0 4px 10px oklch(0.22 0.035 268 / 0.06), 0 12px 28px -8px oklch(0.32 0.09 250 / 0.16);
 }
 
 @utility bg-brand-gradient {

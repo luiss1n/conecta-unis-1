@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { consumeAuthReturn } from "@/lib/auth-return";
 import { formatBrazilianPhone } from "@/lib/profile";
+import { uploadProfileFile } from "@/services/api";
 
 export const Route = createFileRoute("/_authenticated/cadastro")({
   head: () => ({
@@ -106,6 +107,8 @@ function Registration() {
   const { data, isLoading } = useQuery({ queryKey: ["registration"], queryFn: loadRegistration });
   const [kind, setKind] = useState<Kind | null>(null);
   const [busy, setBusy] = useState(false);
+  const [resumeFile, setResumeFile] = useState<File | null>(null);
+  const [resumeReady, setResumeReady] = useState(false);
   useEffect(() => { if (data?.role && data.role !== "admin") setKind(data.role); }, [data?.role]);
 
   if (isLoading || !data) return <p className="container-page py-16 text-muted-foreground">Carregando…</p>;
@@ -129,15 +132,28 @@ function Registration() {
     const raw = { ...Object.fromEntries(new FormData(e.currentTarget)), kind };
     const parsed = (kind === "company" ? company : kind === "professor" ? professor : base.extend({ kind: z.literal("visitor") })).safeParse(raw);
     if (!parsed.success) return void toast.error(parsed.error.issues[0]?.message);
+    if (kind === "visitor" && !d.resume_path && !resumeFile) return void toast.error("Adicione seu currículo em PDF para concluir o perfil de aluno.");
+    const registrationPayload = kind === "visitor" && resumeFile ? { ...parsed.data, resume_upload_pending: true } : parsed.data;
     setBusy(true);
     let error: { message: string } | null = null;
     try {
-      ({ error } = await supabase.rpc("save_registration", { payload: parsed.data }));
-    } finally {
+      ({ error } = await supabase.rpc("save_registration", { payload: registrationPayload }));
+      if (error) throw error;
+      if (kind === "visitor" && resumeFile) {
+        try {
+          await uploadProfileFile(resumeFile, "resume");
+          setResumeReady(true);
+        } catch (uploadError) {
+          throw new Error(uploadError instanceof Error ? `Cadastro salvo, mas o currículo não foi enviado. ${uploadError.message}` : "Cadastro salvo, mas o currículo não foi enviado.");
+        }
+      }
+    } catch (saveError) {
       setBusy(false);
+      toast.error(saveError instanceof Error ? saveError.message : "Não foi possível salvar. Verifique os dados e tente novamente.");
+      return;
     }
-    if (error) return void toast.error("Não foi possível salvar. Verifique os dados (o usuário pode já estar em uso).");
-    toast.success("Cadastro salvo!");
+    setBusy(false);
+    toast.success(kind === "visitor" ? "Perfil de aluno concluído!" : "Cadastro salvo!");
     qc.invalidateQueries({ queryKey: ["registration"] });
     qc.invalidateQueries({ queryKey: ["my-profile"] });
     const returnTo = consumeAuthReturn();
@@ -194,7 +210,17 @@ function Registration() {
               <Field name="qualification" label="Titulação" d={d} required placeholder="ex.: Mestre" />
               <Field name="subjects" label="Disciplinas" d={d} required />
             </section>
-          ) : null}
+          ) : (
+            <section className="space-y-2 rounded-lg border border-primary/20 bg-primary-soft/50 p-4">
+              <h2 className="font-bold">Currículo obrigatório</h2>
+              <p className="text-sm text-muted-foreground">Envie seu currículo em PDF para concluir o perfil. Você poderá atualizar o arquivo depois.</p>
+              <Label htmlFor="onboarding-resume">Currículo (PDF, até 2 MB)</Label>
+              <Input id="onboarding-resume" type="file" accept="application/pdf,.pdf" required={!d.resume_path} onChange={(event) => { setResumeFile(event.target.files?.[0] ?? null); setResumeReady(false); }} />
+              {d.resume_path && !resumeFile && <p className="text-sm text-success">Já existe um currículo salvo na sua conta.</p>}
+              {resumeFile && <p className="text-sm text-muted-foreground">Selecionado: {resumeFile.name}</p>}
+              {resumeReady && <p role="status" className="text-sm text-success">Currículo enviado.</p>}
+            </section>
+          )}
           <Button type="submit" disabled={busy}>{busy ? "Salvando…" : "Salvar cadastro"}</Button>
         </form>
       )}
