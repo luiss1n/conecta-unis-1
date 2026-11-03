@@ -185,6 +185,28 @@ export async function getJob(slug: string): Promise<Job | undefined> {
   return toJob(data, data.companySlug ? await getCompany(data.companySlug) : undefined);
 }
 
+export async function getMySavedJobSlugs(): Promise<string[]> {
+  const user = await requireUser();
+  const { data, error } = await supabase.from("saved_jobs").select("job_slug").eq("user_id", user.id).order("created_at", { ascending: false });
+  if (error) throw new Error("Não foi possível carregar suas vagas salvas.");
+  return (data ?? []).map((row) => row.job_slug);
+}
+
+export async function toggleSavedJob(slug: string, saved: boolean): Promise<void> {
+  const user = await requireUser();
+  const result = saved
+    ? await supabase.from("saved_jobs").delete().eq("user_id", user.id).eq("job_slug", slug)
+    : await supabase.from("saved_jobs").upsert({ user_id: user.id, job_slug: slug }, { onConflict: "user_id,job_slug", ignoreDuplicates: true });
+  if (result.error) throw new Error("Não foi possível atualizar suas vagas salvas.");
+}
+
+export async function getMySavedJobs(): Promise<Job[]> {
+  const slugs = await getMySavedJobSlugs();
+  if (!slugs.length) return [];
+  const jobs = await Promise.all(slugs.map((slug) => getJob(slug)));
+  return jobs.filter((job): job is Job => !!job);
+}
+
 export async function getJobsByCompany(slug: string): Promise<Job[]> {
   const { data, error } = await supabase.from("jobs").select("*").eq("companySlug", slug).order("publishedAt", { ascending: false });
   if (error) throw error;
@@ -284,6 +306,12 @@ export async function getReceivedApplications(): Promise<ApplicationListItem[]> 
   const { data, error } = await supabase.from("job_applications").select("*").in("job_slug", slugs).order("created_at", { ascending: false }).limit(100);
   if (error) throw new Error("Não foi possível carregar as candidaturas recebidas.");
   return attachApplicationJobs(data ?? []);
+}
+
+export async function getAdminApplicationCounts(): Promise<Record<string, number>> {
+  const { data, error } = await supabase.rpc("get_admin_publication_counts");
+  if (error) throw new Error("Não foi possível carregar os totais de candidaturas.");
+  return (data ?? {}) as Record<string, number>;
 }
 
 export async function getApplicationConversation(applicationId: string) {

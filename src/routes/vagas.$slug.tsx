@@ -3,6 +3,7 @@ import { Briefcase, CalendarDays, CheckCircle2, ChevronRight, Clock, Gift, MapPi
 import type { ReactNode } from "react";
 import { CompanyAvatar } from "@/components/common/CompanyAvatar";
 import { ApplicationConsent } from "@/components/jobs/ApplicationConsent";
+import { SaveJobButton } from "@/components/jobs/SaveJobButton";
 import { JobTypeBadge } from "@/components/jobs/JobCard";
 import { formatDate, jobPublisher, modeLabel, scheduleLabel, typeLabel } from "@/lib/jobs";
 import { getJob } from "@/services/api";
@@ -94,6 +95,7 @@ function JobDetails() {
               <p className="mt-1 font-medium text-primary">{publisher}</p>
             )}
           </div>
+          <div className="sm:ml-auto"><SaveJobButton job={job} compact /></div>
         </div>
         <ul className="mt-6 flex flex-wrap gap-x-6 gap-y-2 text-sm text-muted-foreground">
           {meta.map(({ icon: Icon, label }) => (

@@ -1,10 +1,11 @@
 import { Link } from "@tanstack/react-router";
-import { CalendarDays, MapPin } from "lucide-react";
+import { CalendarDays, MapPin, Bookmark } from "lucide-react";
 import { motion, useReducedMotion, type Variants } from "framer-motion";
 import { CompanyAvatar } from "@/components/common/CompanyAvatar";
 import { formatDate, jobPublisher, modeLabel, typeLabel } from "@/lib/jobs";
 import { cn } from "@/lib/utils";
 import type { Job } from "@/types";
+import { SaveJobButton } from "@/components/jobs/SaveJobButton";
 
 export function JobTypeBadge({ type }: { type: Job["type"] }) {
   return (
@@ -33,6 +34,7 @@ export function JobCard({ job }: { job: Job }) {
         </div>
         <JobTypeBadge type={job.type} />
       </div>
+      <SaveJobButton job={job} />
       <h3 className="mt-4 text-base font-bold leading-snug transition-colors group-hover:text-primary">{job.title}</h3>
       <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">{job.summary}</p>
       <div className="mt-auto flex flex-wrap items-center gap-x-4 gap-y-1 pt-4 text-xs text-muted-foreground">

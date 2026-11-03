@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { CalendarDays, Plus, ShieldCheck, Trash2 } from "lucide-react";
+import { CalendarDays, Plus, Search, ShieldCheck, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { EmptyState } from "@/components/common/EmptyState";
@@ -27,6 +27,7 @@ import {
   getCompanies,
   getEvents,
   getJobs,
+  getAdminApplicationCounts,
   getMyRole,
   saveEventAsAdmin,
   saveJobAsAdmin,
@@ -44,6 +45,17 @@ export const Route = createFileRoute("/_authenticated/admin")({
 });
 
 type Editing = { kind: "job"; item?: Job } | { kind: "event"; item?: CareerEvent } | null;
+
+function PublicationFilters({ filter, onFilter, search, onSearch }: { filter: "all" | "active" | "closed"; onFilter: (filter: "all" | "active" | "closed") => void; search: string; onSearch: (value: string) => void }) {
+  return <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+    <label className="flex flex-1 flex-col gap-1 text-sm font-medium">Buscar publicação
+      <span className="flex h-10 items-center gap-2 rounded-md border px-3"><Search className="h-4 w-4 text-muted-foreground" /><input value={search} onChange={(event) => onSearch(event.target.value)} className="min-w-0 flex-1 bg-transparent outline-none" placeholder="Título, cidade ou publicador" /></span>
+    </label>
+    <label className="flex flex-col gap-1 text-sm font-medium">Status
+      <select value={filter} onChange={(event) => onFilter(event.target.value as typeof filter)} className="h-10 rounded-md border bg-background px-3"><option value="all">Todas</option><option value="active">Ativas</option><option value="closed">Encerradas</option></select>
+    </label>
+  </div>;
+}
 
 function ConfirmDelete({ title, onConfirm }: { title: string; onConfirm: () => Promise<void> }) {
   return (
@@ -74,8 +86,11 @@ function AdminPage() {
   const jobs = useQuery({ queryKey: ["admin-jobs"], queryFn: getJobs, enabled: isAdmin });
   const events = useQuery({ queryKey: ["admin-events"], queryFn: () => getEvents(), enabled: isAdmin });
   const companies = useQuery({ queryKey: ["admin-companies"], queryFn: getCompanies, enabled: isAdmin });
+  const applicationCounts = useQuery({ queryKey: ["admin-application-counts"], queryFn: getAdminApplicationCounts, enabled: isAdmin, staleTime: 60_000 });
   const [editing, setEditing] = useState<Editing>(null);
   const [tab, setTab] = useState("vagas");
+  const [publicationFilter, setPublicationFilter] = useState<"all" | "active" | "closed">("all");
+  const [search, setSearch] = useState("");
 
   const refresh = () =>
     Promise.all(["admin-jobs", "admin-events", "admin-companies"].map((k) => qc.invalidateQueries({ queryKey: [k] })));
@@ -107,6 +122,17 @@ function AdminPage() {
 
   const jobList = jobs.data ?? [];
   const eventList = events.data ?? [];
+  const visibleJobs = jobList.filter((job) => {
+    const matchesState = publicationFilter === "all" || publicationFilter === "active";
+    const query = search.trim().toLocaleLowerCase("pt-BR");
+    return matchesState && (!query || `${job.title} ${job.city} ${jobPublisher(job)}`.toLocaleLowerCase("pt-BR").includes(query));
+  });
+  const visibleEvents = eventList.filter((event) => {
+    const past = new Date(event.date).getTime() < Date.now();
+    const matchesState = publicationFilter === "all" || (publicationFilter === "active" ? !past : past);
+    const query = search.trim().toLocaleLowerCase("pt-BR");
+    return matchesState && (!query || `${event.title} ${event.location} ${event.category}`.toLocaleLowerCase("pt-BR").includes(query));
+  });
   const stats = [
     { label: "Vagas", value: jobList.length },
     { label: "Eventos", value: eventList.length },
@@ -178,18 +204,19 @@ function AdminPage() {
           </TabsList>
 
           <TabsContent value="vagas" className="mt-5">
+            <PublicationFilters filter={publicationFilter} onFilter={setPublicationFilter} search={search} onSearch={setSearch} />
             {jobs.isLoading ? (
               <p className="text-muted-foreground">Carregando…</p>
-            ) : jobList.length === 0 ? (
+            ) : visibleJobs.length === 0 ? (
               <EmptyState title="Nenhuma vaga publicada" description="Publique a primeira vaga da plataforma." action={<Button onClick={() => setEditing({ kind: "job" })}>Nova vaga</Button>} />
             ) : (
               <ul className="space-y-3">
-                {jobList.map((j) => (
+                {visibleJobs.map((j) => (
                   <li key={j.slug} className="flex flex-col gap-3 rounded-xl border bg-card p-4 shadow-card sm:flex-row sm:items-center">
                     <div className="min-w-0 flex-1">
                       <p className="truncate font-bold">{j.title}</p>
                       <p className="truncate text-sm text-muted-foreground">
-                        {jobPublisher(j)} · {j.city} · {typeLabel[j.type]} · {formatDate(j.publishedAt)}
+                        {jobPublisher(j)} · {j.city} · {typeLabel[j.type]} · {formatDate(j.publishedAt)} · {applicationCounts.data?.[j.slug] ?? 0} candidaturas
                       </p>
                     </div>
                     <div className="flex flex-wrap gap-1">
@@ -204,13 +231,14 @@ function AdminPage() {
           </TabsContent>
 
           <TabsContent value="eventos" className="mt-5">
+            <PublicationFilters filter={publicationFilter} onFilter={setPublicationFilter} search={search} onSearch={setSearch} />
             {events.isLoading ? (
               <p className="text-muted-foreground">Carregando…</p>
-            ) : eventList.length === 0 ? (
+            ) : visibleEvents.length === 0 ? (
               <EmptyState title="Nenhum evento publicado" description="Publique o primeiro evento da plataforma." action={<Button onClick={() => setEditing({ kind: "event" })}>Novo evento</Button>} />
             ) : (
               <ul className="space-y-3">
-                {eventList.map((e) => {
+                {visibleEvents.map((e) => {
                   const d = formatEventDate(e.date);
                   const past = new Date(e.date).getTime() < Date.now();
                   return (

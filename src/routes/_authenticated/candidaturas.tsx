@@ -37,6 +37,7 @@ function ApplicationsInbox() {
     <>
       <PageHeader eyebrow="Área da conta" title="Candidaturas e conversas" description="Acompanhe oportunidades, inscrições e mensagens em um só lugar." />
       <div className="container-page max-w-4xl space-y-10 py-8 sm:py-10">
+        {role === "visitor" && <section className="rounded-xl border bg-primary-soft/50 p-5"><h2 className="font-bold">Seu próximo passo</h2><p className="mt-1 text-sm text-muted-foreground">Mantenha seu currículo e preferências de carreira em dia para encontrar oportunidades mais adequadas.</p><div className="mt-4 flex flex-wrap gap-2"><Button asChild size="sm"><Link to="/alertas">Configurar alertas</Link></Button><Button asChild variant="outline" size="sm"><Link to="/vagas-salvas">Ver vagas salvas</Link></Button><Button asChild variant="outline" size="sm"><Link to="/calendario">Abrir calendário</Link></Button></div></section>}
         {canReceive && <ApplicationSection title="Candidaturas recebidas" description="Converse com quem se candidatou às suas vagas." items={received.data ?? []} loading={received.isLoading} error={received.isError} incoming />}
         {canApply && <ApplicationSection title="Minhas candidaturas" description="Veja o andamento das suas inscrições e abra a conversa com o anunciante." items={sent.data ?? []} loading={sent.isLoading} error={sent.isError} />}
         {canApply && (
