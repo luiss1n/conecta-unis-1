@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { DEFAULT_PUBLISHER } from "@/lib/jobs";
-import type { NewJobValues } from "@/services/api";
+import { deletePublicationDraft, getPublicationDraft, savePublicationDraft, type NewJobValues } from "@/services/api";
 import type { Company, Job } from "@/types";
 import { Field, areaCls, inputCls, lines } from "./fields";
 import { useQuery } from "@tanstack/react-query";
@@ -26,6 +26,10 @@ interface Props {
 
 export function JobForm({ initial, admin = false, companies = [], submitLabel, savingLabel = "Salvando…", successMessage, onSubmit, onDone, onCancel }: Props) {
   const [saving, setSaving] = useState(false);
+  const [draftReady, setDraftReady] = useState(false);
+  const [draftStatus, setDraftStatus] = useState("Carregando rascunho da conta…");
+  const submitSucceeded = useRef(false);
+  const isEditing = !!initial;
   const { data: regionalCities = [], isLoading: citiesLoading, isError: citiesError } = useQuery({ queryKey: ["regional-cities"], queryFn: getRegionalCities, staleTime: 24 * 60 * 60 * 1000 });
   const [form, setForm] = useState({
     title: initial?.title ?? "",
@@ -43,6 +47,24 @@ export function JobForm({ initial, admin = false, companies = [], submitLabel, s
     companySlug: initial?.companySlug ?? "",
     publisherName: initial?.publisherName ?? DEFAULT_PUBLISHER,
   });
+  useEffect(() => {
+    if (isEditing || admin) { setDraftReady(true); return; }
+    let active = true;
+    void getPublicationDraft<typeof form>("job").then((draft) => {
+      if (!active) return;
+      if (draft?.payload) setForm((current) => ({ ...current, ...draft.payload }));
+      setDraftStatus(draft?.updated_at ? `Rascunho sincronizado em ${new Date(draft.updated_at).toLocaleString("pt-BR")}` : "Rascunho sincronizado com sua conta");
+      setDraftReady(true);
+    }).catch(() => { if (active) { setDraftStatus("Rascunho indisponível; você ainda pode preencher e publicar."); setDraftReady(true); } });
+    return () => { active = false; };
+  }, [admin, isEditing]);
+  useEffect(() => {
+    if (!draftReady || isEditing || admin || submitSucceeded.current || !Object.values(form).some((value) => typeof value === "string" && value.trim().length > 0)) return;
+    const timer = window.setTimeout(() => {
+      void savePublicationDraft("job", form, new Date().toISOString()).then(() => setDraftStatus("Rascunho salvo na sua conta")).catch(() => setDraftStatus("Não foi possível sincronizar o rascunho"));
+    }, 900);
+    return () => window.clearTimeout(timer);
+  }, [admin, draftReady, form, isEditing]);
   const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
     setForm((f) => ({ ...f, [k]: e.target.value }));
 
@@ -73,6 +95,11 @@ export function JobForm({ initial, admin = false, companies = [], submitLabel, s
         companySlug: admin && form.companySlug ? form.companySlug : null,
         publisherName: admin && !form.companySlug ? form.publisherName : null,
       });
+      submitSucceeded.current = true;
+      if (!isEditing && !admin) {
+        try { await deletePublicationDraft("job"); }
+        catch { setDraftStatus("Vaga publicada; o rascunho ainda pode aparecer em sua conta."); }
+      }
       toast.success(successMessage);
       onDone();
     } catch (err) {
@@ -152,9 +179,10 @@ export function JobForm({ initial, admin = false, companies = [], submitLabel, s
       <Field label="Benefícios (um por linha)">
         <textarea className={areaCls} rows={3} value={form.benefits} onChange={set("benefits")} />
       </Field>
+      {!admin && !isEditing && <p className="text-xs text-muted-foreground" role="status" aria-live="polite">{draftStatus}</p>}
       <div className="flex flex-col-reverse gap-3 sm:flex-row">
         {onCancel && <Button type="button" variant="outline" size="lg" className="sm:flex-1" onClick={onCancel} disabled={saving}>Cancelar</Button>}
-        <Button type="submit" size="lg" className="sm:flex-1" disabled={saving}>{saving ? savingLabel : submitLabel}</Button>
+        <Button type="submit" size="lg" className="sm:flex-1" disabled={saving || (!admin && !isEditing && !draftReady)}>{saving ? savingLabel : submitLabel}</Button>
       </div>
     </form>
   );

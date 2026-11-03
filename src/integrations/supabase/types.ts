@@ -436,6 +436,7 @@ export type Database = {
         Returns: boolean
       }
       save_registration: { Args: { payload: Json }; Returns: undefined }
+      save_publication_draft: { Args: { _kind: string; _payload: Json; _updated_at: string }; Returns: undefined }
       submit_job_application: { Args: { _consent: boolean; _cover_message?: string; _job_slug: string }; Returns: string }
       update_job_application_status: { Args: { _application_id: string; _status: string }; Returns: undefined }
     }

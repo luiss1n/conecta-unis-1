@@ -19,6 +19,8 @@ export type JobApplication = Database["public"]["Tables"]["job_applications"]["R
 export type ApplicationMessage = Database["public"]["Tables"]["application_messages"]["Row"];
 export type UserNotification = Database["public"]["Tables"]["notifications"]["Row"];
 export type RegionalCity = { city: string; latitude: number; longitude: number; is_sre_caxambu: boolean };
+export type PublicationDraftKind = "job" | "event";
+export type PublicationDraft<T> = { payload: T; updated_at: string };
 export type PlatformStats = { users: number; jobs: number; companies: number; events: number };
 export type ApplicationCandidateProfile = {
   id: string;
@@ -59,6 +61,27 @@ export async function getRegionalCities(): Promise<RegionalCity[]> {
   const { data, error } = await supabase.from("regional_cities").select("city,latitude,longitude,is_sre_caxambu").order("city");
   if (error) throw new Error("Não foi possível carregar as cidades disponíveis.");
   return (data ?? []) as RegionalCity[];
+}
+
+export async function getPublicationDraft<T>(kind: PublicationDraftKind): Promise<PublicationDraft<T> | null> {
+  const user = await requireUser();
+  const { data, error } = await supabase.from("publication_drafts").select("payload,updated_at").eq("user_id", user.id).eq("kind", kind).maybeSingle();
+  if (error) throw new Error("Não foi possível carregar seu rascunho.");
+  return data as PublicationDraft<T> | null;
+}
+
+export async function savePublicationDraft(kind: PublicationDraftKind, payload: Record<string, unknown>, updatedAt: string): Promise<void> {
+  const user = await requireUser();
+  const role = await getMyRole();
+  if (role !== "company" && role !== "professor") throw new Error("Somente empresas e professores podem salvar rascunhos de publicação.");
+  const { error } = await supabase.rpc("save_publication_draft", { _kind: kind, _payload: payload, _updated_at: updatedAt });
+  if (error) throw new Error("Não foi possível sincronizar o rascunho.");
+}
+
+export async function deletePublicationDraft(kind: PublicationDraftKind): Promise<void> {
+  const user = await requireUser();
+  const { error } = await supabase.from("publication_drafts").delete().eq("user_id", user.id).eq("kind", kind);
+  if (error) throw new Error("A publicação foi criada, mas não foi possível limpar o rascunho.");
 }
 
 export async function getMyNotifications(): Promise<UserNotification[]> {
