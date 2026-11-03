@@ -41,6 +41,7 @@ export function Header() {
   const { data: role } = useQuery({ queryKey: ["my-role"], queryFn: getMyRole, enabled: !!session });
   const { data: notifications = [] } = useQuery({ queryKey: ["my-notifications", session?.user.id], queryFn: getMyNotifications, enabled: !!session, refetchInterval: 30_000 });
   const isAdmin = role === "admin";
+  const isStudent = role === "visitor";
   const canPublish = role === "company" || role === "professor";
   const unreadCount = useMemo(() => notifications.filter((notification) => !notification.read_at).length, [notifications]);
   async function markAsRead(id: string) {
@@ -144,6 +145,7 @@ export function Header() {
                 <Button asChild size="sm" className="hidden sm:inline-flex"><Link to="/admin"><ShieldCheck className="h-4 w-4" /> Painel admin</Link></Button>
               )}
               <Button asChild variant="ghost" size="sm" className="hidden sm:inline-flex"><Link to="/candidaturas">Candidaturas</Link></Button>
+              {isStudent && <Button asChild variant="ghost" size="sm" className="hidden md:inline-flex"><Link to="/alertas">Alertas</Link></Button>}
               <Button asChild variant="outline" size="sm"><Link to="/perfil">Meu perfil</Link></Button>
               <Button variant="ghost" size="sm" onClick={signOut}>Sair</Button>
             </>
@@ -178,6 +180,7 @@ export function Header() {
                   {session ? "Meu perfil" : "Entrar"}
                 </Link>
                 {session && <Link to="/candidaturas" onClick={() => setOpen(false)} className="rounded-md px-3 py-3 font-medium hover:bg-muted">Candidaturas e conversas</Link>}
+                {isStudent && <Link to="/alertas" onClick={() => setOpen(false)} className="rounded-md px-3 py-3 font-medium hover:bg-muted">Alertas de vagas</Link>}
                 {isAdmin && (
                   <Link to="/admin" onClick={() => setOpen(false)} className="rounded-md px-3 py-3 font-medium text-primary hover:bg-muted">
                     Painel do administrador

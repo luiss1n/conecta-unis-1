@@ -5,6 +5,8 @@ import { DEFAULT_PUBLISHER } from "@/lib/jobs";
 import type { NewJobValues } from "@/services/api";
 import type { Company, Job } from "@/types";
 import { Field, areaCls, inputCls, lines } from "./fields";
+import { useQuery } from "@tanstack/react-query";
+import { getRegionalCities } from "@/services/api";
 
 type Values = NewJobValues & { companySlug: string | null; publisherName: string | null };
 
@@ -24,6 +26,7 @@ interface Props {
 
 export function JobForm({ initial, admin = false, companies = [], submitLabel, savingLabel = "Salvando…", successMessage, onSubmit, onDone, onCancel }: Props) {
   const [saving, setSaving] = useState(false);
+  const { data: regionalCities = [], isLoading: citiesLoading, isError: citiesError } = useQuery({ queryKey: ["regional-cities"], queryFn: getRegionalCities, staleTime: 24 * 60 * 60 * 1000 });
   const [form, setForm] = useState({
     title: initial?.title ?? "",
     type: initial?.type ?? "estagio",
@@ -123,7 +126,12 @@ export function JobForm({ initial, admin = false, companies = [], submitLabel, s
           </select>
         </Field>
         <Field label="Cidade">
-          <input className={inputCls} value={form.city} onChange={set("city")} maxLength={100} placeholder="Ex.: São Lourenço" />
+          <select className={inputCls} value={form.city} onChange={set("city")} required disabled={citiesLoading || !!citiesError}>
+            <option value="">{citiesLoading ? "Carregando cidades…" : citiesError ? "Não foi possível carregar cidades" : "Selecione uma cidade"}</option>
+            {form.city && !regionalCities.some(({ city }) => city === form.city) && <option value={form.city}>{form.city}</option>}
+            {regionalCities.map(({ city, is_sre_caxambu }) => <option key={city} value={city}>{city}{is_sre_caxambu ? " · SRE Caxambu" : " · até 20 km"}</option>)}
+          </select>
+          {citiesError && <p role="alert" className="text-xs text-destructive">Não foi possível carregar as cidades. Atualize a página e tente de novo.</p>}
         </Field>
         <Field label="Salário / bolsa (opcional)">
           <input className={inputCls} value={form.salary} onChange={set("salary")} maxLength={100} placeholder="Ex.: R$ 1.500" />

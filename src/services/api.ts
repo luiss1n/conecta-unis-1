@@ -18,6 +18,7 @@ type EventRow = Database["public"]["Tables"]["events"]["Row"];
 export type JobApplication = Database["public"]["Tables"]["job_applications"]["Row"];
 export type ApplicationMessage = Database["public"]["Tables"]["application_messages"]["Row"];
 export type UserNotification = Database["public"]["Tables"]["notifications"]["Row"];
+export type RegionalCity = { city: string; latitude: number; longitude: number; is_sre_caxambu: boolean };
 export type PlatformStats = { users: number; jobs: number; companies: number; events: number };
 export type ApplicationCandidateProfile = {
   id: string;
@@ -52,6 +53,12 @@ export async function getPlatformStats(): Promise<PlatformStats> {
   const { data, error } = await supabase.rpc("get_platform_stats");
   if (error) throw error;
   return data as unknown as PlatformStats;
+}
+
+export async function getRegionalCities(): Promise<RegionalCity[]> {
+  const { data, error } = await supabase.from("regional_cities").select("city,latitude,longitude,is_sre_caxambu").order("city");
+  if (error) throw new Error("Não foi possível carregar as cidades disponíveis.");
+  return (data ?? []) as RegionalCity[];
 }
 
 export async function getMyNotifications(): Promise<UserNotification[]> {

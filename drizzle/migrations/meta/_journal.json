@@ -78,6 +78,13 @@
       "when": 1793217900000,
       "tag": "0011_student_onboarding_rules",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1793217960000,
+      "tag": "0012_student_job_alerts_and_region",
+      "breakpoints": true
     }
   ]
 }

@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      regional_cities: {
+        Row: { city: string; latitude: number; longitude: number; is_sre_caxambu: boolean }
+        Insert: { city: string; latitude: number; longitude: number; is_sre_caxambu?: boolean }
+        Update: { city?: string; latitude?: number; longitude?: number; is_sre_caxambu?: boolean }
+        Relationships: []
+      }
+      student_job_alert_preferences: {
+        Row: { user_id: string; categories: string[]; cities: string[]; enabled: boolean; created_at: string; updated_at: string }
+        Insert: { user_id: string; categories?: string[]; cities?: string[]; enabled?: boolean; created_at?: string; updated_at?: string }
+        Update: { user_id?: string; categories?: string[]; cities?: string[]; enabled?: boolean; created_at?: string; updated_at?: string }
+        Relationships: [{ foreignKeyName: "student_job_alert_preferences_user_id_fkey"; columns: ["user_id"]; isOneToOne: true; referencedRelation: "profiles"; referencedColumns: ["id"] }]
+      }
+      saved_jobs: {
+        Row: { user_id: string; job_slug: string; created_at: string }
+        Insert: { user_id: string; job_slug: string; created_at?: string }
+        Update: { user_id?: string; job_slug?: string; created_at?: string }
+        Relationships: []
+      }
+      publication_drafts: {
+        Row: { id: string; user_id: string; kind: string; payload: Json; created_at: string; updated_at: string }
+        Insert: { id?: string; user_id: string; kind: string; payload?: Json; created_at?: string; updated_at?: string }
+        Update: { id?: string; user_id?: string; kind?: string; payload?: Json; created_at?: string; updated_at?: string }
+        Relationships: []
+      }
+      job_alert_deliveries: {
+        Row: { user_id: string; job_slug: string; notification_id: string | null; created_at: string }
+        Insert: { user_id: string; job_slug: string; notification_id?: string | null; created_at?: string }
+        Update: { user_id?: string; job_slug?: string; notification_id?: string | null; created_at?: string }
+        Relationships: []
+      }
       notifications: {
         Row: { actor_id: string | null; body: string; created_at: string; id: string; read_at: string | null; recipient_id: string; target_path: string; title: string }
         Insert: { actor_id?: string | null; body: string; created_at?: string; id?: string; read_at?: string | null; recipient_id: string; target_path?: string; title: string }
