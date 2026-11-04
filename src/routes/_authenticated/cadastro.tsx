@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { consumeAuthReturn } from "@/lib/auth-return";
-import { formatBrazilianPhone } from "@/lib/profile";
+import { formatBrazilianCnpj, formatBrazilianPhone, isValidBrazilianCnpj } from "@/lib/profile";
 import { uploadProfileFile } from "@/services/api";
 
 export const Route = createFileRoute("/_authenticated/cadastro")({
@@ -26,6 +26,21 @@ export const Route = createFileRoute("/_authenticated/cadastro")({
 });
 
 type Kind = "company" | "professor" | "visitor";
+
+function registrationErrorMessage(message: string, kind: Kind): string {
+  const value = message.toLowerCase();
+  if (value.includes("username") && (value.includes("unique") || value.includes("duplicate"))) return "Este nome de usuário já está em uso. Escolha outro.";
+  if (value.includes("invalid company")) return "Confira os dados da empresa, o CNPJ e o site. O CNPJ precisa ser válido e o site deve começar com http:// ou https://.";
+  if (value.includes("invalid professor")) return "Confira instituição, curso/departamento, disciplinas e titulação; cada campo precisa ter pelo menos 2 caracteres.";
+  if (value.includes("invalid profile")) return "Confira nome, nome de usuário, cidade e telefone. O telefone deve seguir o formato (XX) XXXXX-XXXX.";
+  if (value.includes("account type cannot be changed")) return "O tipo desta conta já foi definido e não pode ser alterado.";
+  if (value.includes("account type not allowed")) return "Este tipo de conta não pode ser cadastrado por este formulário.";
+  if (value.includes("authentication required") || value.includes("jwt")) return "Sua sessão expirou. Entre novamente e tente salvar o cadastro.";
+  if (value.includes("duplicate key") || value.includes("company_details_cnpj")) return "Já existe uma conta cadastrada com este CNPJ. Confira o número ou entre em contato com o suporte.";
+  if (value.includes("row-level security") || value.includes("permission denied")) return "Sua sessão não tem permissão para concluir este cadastro. Saia da conta e entre novamente.";
+  if (kind === "professor" && value.includes("professor.unis.edu.br")) return "O perfil de professor exige um e-mail institucional confirmado @professor.unis.edu.br.";
+  return "Não foi possível salvar o cadastro. Confira os campos e sua conexão e tente novamente.";
+}
 
 function normalizeUsername(value: string): string {
   return value.trim().normalize("NFC").slice(0, 25).toLocaleLowerCase("pt-BR");
@@ -46,7 +61,7 @@ const company = base.extend({
   kind: z.literal("company"),
   company_name: z.string().trim().min(2, "Informe o nome da empresa").max(120),
   legal_name: z.string().trim().min(2, "Informe a razão social").max(160),
-  cnpj: z.string().transform((v) => v.replace(/\D/g, "")).refine((v) => v.length === 14, "CNPJ deve ter 14 números"),
+  cnpj: z.string().transform((v) => v.replace(/\D/g, "")).refine(isValidBrazilianCnpj, "Informe um CNPJ válido com 14 dígitos verificadores."),
   sector: z.string().trim().min(2, "Informe o setor").max(100),
   website: z.string().trim().max(300).refine((v) => v === "" || /^https?:\/\//.test(v), "Site deve começar com http:// ou https://"),
 });
@@ -101,6 +116,11 @@ function PhoneField({ defaultValue }: { defaultValue: string | undefined }) {
   return <div className="space-y-1.5"><Label htmlFor="phone">Telefone</Label><Input id="phone" name="phone" value={phone} onChange={(event) => setPhone(formatBrazilianPhone(event.target.value))} placeholder="(XX) XXXXX-XXXX" maxLength={15} inputMode="tel" /></div>;
 }
 
+function CnpjField({ defaultValue }: { defaultValue: string | undefined }) {
+  const [cnpj, setCnpj] = useState(() => formatBrazilianCnpj(defaultValue ?? ""));
+  return <div className="space-y-1.5"><Label htmlFor="cnpj">CNPJ</Label><Input id="cnpj" name="cnpj" value={cnpj} onChange={(event) => setCnpj(formatBrazilianCnpj(event.target.value))} placeholder="00.000.000/0000-00" maxLength={18} inputMode="numeric" autoComplete="off" required /></div>;
+}
+
 function Registration() {
   const navigate = useNavigate();
   const qc = useQueryClient();
@@ -132,13 +152,14 @@ function Registration() {
     const raw = { ...Object.fromEntries(new FormData(e.currentTarget)), kind };
     const parsed = (kind === "company" ? company : kind === "professor" ? professor : base.extend({ kind: z.literal("visitor") })).safeParse(raw);
     if (!parsed.success) return void toast.error(parsed.error.issues[0]?.message);
+    if (kind === "professor" && !canRegisterAsProfessor) return void toast.error("Para cadastrar perfil de professor, use um e-mail institucional confirmado @professor.unis.edu.br.");
     if (kind === "visitor" && !d.resume_path && !resumeFile) return void toast.error("Adicione seu currículo em PDF para concluir o perfil de aluno.");
     const registrationPayload = kind === "visitor" && resumeFile ? { ...parsed.data, resume_upload_pending: true } : parsed.data;
     setBusy(true);
     let error: { message: string } | null = null;
     try {
       ({ error } = await supabase.rpc("save_registration", { payload: registrationPayload }));
-      if (error) throw error;
+      if (error) throw new Error(registrationErrorMessage(error.message, kind));
       if (kind === "visitor" && resumeFile) {
         try {
           await uploadProfileFile(resumeFile, "resume");
@@ -149,7 +170,7 @@ function Registration() {
       }
     } catch (saveError) {
       setBusy(false);
-      toast.error(saveError instanceof Error ? saveError.message : "Não foi possível salvar. Verifique os dados e tente novamente.");
+      toast.error(saveError instanceof Error ? saveError.message : "Não foi possível salvar o cadastro. Confira sua conexão e tente novamente.");
       return;
     }
     setBusy(false);
@@ -198,7 +219,7 @@ function Registration() {
               <h2 className="font-bold sm:col-span-2">Dados da empresa</h2>
               <Field name="company_name" label="Nome da empresa" d={d} required />
               <Field name="legal_name" label="Razão social" d={d} required />
-              <Field name="cnpj" label="CNPJ" d={d} required placeholder="00.000.000/0000-00" />
+              <CnpjField defaultValue={d.cnpj} />
               <Field name="sector" label="Setor" d={d} required />
               <div className="sm:col-span-2"><Field name="website" label="Site" d={d} placeholder="https://" /></div>
             </section>
