@@ -15,8 +15,10 @@ import type { JobFilters } from "@/types";
 
 export const Route = createFileRoute("/")({
   loader: async () => {
-    const [jobs, events, stats] = await Promise.all([getJobs(), getEvents({ upcomingOnly: true }), getPlatformStats()]);
-    return { jobs, events, stats };
+    const [jobs, events, statsResult] = await Promise.allSettled([getJobs(), getEvents({ upcomingOnly: true }), getPlatformStats()]);
+    if (jobs.status === "rejected") throw jobs.reason;
+    if (events.status === "rejected") throw events.reason;
+    return { jobs: jobs.value, events: events.value, stats: statsResult.status === "fulfilled" ? statsResult.value : undefined, statsError: statsResult.status === "rejected" };
   },
   head: () => ({
     meta: [
@@ -37,7 +39,7 @@ const heroDelay = (ms: number) => ({ "--hero-delay": `${ms}ms` }) as CSSProperti
 function Home() {
   const [f, setF] = useState<JobFilters>(emptyFilters);
   const [limit, setLimit] = useState(PAGE);
-  const { jobs: all, events, stats } = Route.useLoaderData();
+  const { jobs: all, events, stats, statsError } = Route.useLoaderData();
   const results = useMemo(() => filterJobs(all, f), [all, f]);
   const shown = results.slice(0, limit);
 
@@ -159,7 +161,7 @@ function Home() {
 
       <div className="container-page">
         <FadeUp>
-          <StatsCards values={stats} />
+          <StatsCards values={stats} error={statsError} />
         </FadeUp>
       </div>
     </>

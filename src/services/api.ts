@@ -54,7 +54,15 @@ export async function getApplicationCandidateProfile(applicationId: string): Pro
 export async function getPlatformStats(): Promise<PlatformStats> {
   const { data, error } = await supabase.rpc("get_platform_stats");
   if (error) throw error;
-  return data as unknown as PlatformStats;
+  if (!data || typeof data !== "object" || Array.isArray(data)) throw new Error("Estatísticas da plataforma indisponíveis.");
+  const values = data as Record<string, unknown>;
+  const keys = ["users", "jobs", "companies", "events"] as const;
+  for (const key of keys) {
+    if (typeof values[key] !== "number" || !Number.isFinite(values[key]) || values[key] < 0) {
+      throw new Error("Estatísticas da plataforma indisponíveis.");
+    }
+  }
+  return { users: values.users as number, jobs: values.jobs as number, companies: values.companies as number, events: values.events as number };
 }
 
 export async function getRegionalCities(): Promise<RegionalCity[]> {

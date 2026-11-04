@@ -432,7 +432,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      get_platform_stats: { Args: Record<PropertyKey, never>; Returns: Json }
+      get_platform_stats: { Args: Record<PropertyKey, never>; Returns: { users: number; jobs: number; companies: number; events: number } }
       get_application_candidate_profile: { Args: { _application_id: string }; Returns: Json }
       has_role: {
         Args: {

@@ -94,10 +94,17 @@
       "breakpoints": true
     },
     {
-      "idx": 14,
+      "idx": 13,
       "version": "7",
       "when": 1793743200000,
       "tag": "0015_job_closing_and_deadlines",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1793793000000,
+      "tag": "0016_registration_rules_and_live_stats",
       "breakpoints": true
     }
   ]
