@@ -6,6 +6,7 @@ import { PageHeader } from "@/components/common/PageHeader";
 import { Button } from "@/components/ui/button";
 import { closeJob, getMyAlertPreferences, getMyApplications, getMyEventRegistrations, getMyProfile, getMyPublishedJobs, getMyRole, getMySavedJobSlugs, getReceivedApplications, type ApplicationListItem } from "@/services/api";
 import { toast } from "sonner";
+import { useMemo, useState } from "react";
 
 export const Route = createFileRoute("/_authenticated/candidaturas")({
   head: () => ({ meta: [
@@ -92,15 +93,23 @@ function ApplicationsInbox() {
 function ApplicationSection({ title, description, items, loading, error, incoming = false }: {
   title: string; description: string; items: ApplicationListItem[]; loading: boolean; error: boolean; incoming?: boolean;
 }) {
+  const [status, setStatus] = useState("all");
+  const [search, setSearch] = useState("");
+  const filtered = useMemo(() => items.filter(({ application, job }) => {
+    const matchesStatus = status === "all" || application.status === status;
+    const target = incoming ? `${application.applicant_name} ${job.title}` : `${job.title} ${job.publisherName || job.company?.name || ""}`;
+    return matchesStatus && target.toLocaleLowerCase("pt-BR").includes(search.trim().toLocaleLowerCase("pt-BR"));
+  }), [incoming, items, search, status]);
   return (
     <section aria-labelledby={`${title}-title`}>
       <div className="mb-4">
         <h2 id={`${title}-title`} className="text-xl font-bold">{title}</h2>
         <p className="mt-1 text-sm text-muted-foreground">{description}</p>
       </div>
-      {loading ? <p className="py-5 text-sm text-muted-foreground">Carregando candidaturas…</p> : error ? <p role="alert" className="py-5 text-sm text-destructive">Não foi possível carregar esta lista. Atualize a página e tente novamente.</p> : items.length ? (
+      {incoming && !loading && !error && items.length > 0 && <div className="mb-3 grid gap-2 sm:grid-cols-[minmax(0,1fr)_12rem]"><label className="sr-only" htmlFor={`${title}-search`}>Buscar candidaturas</label><input id={`${title}-search`} className="h-11 rounded-md border bg-background px-3 text-sm" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar pessoa ou vaga" /><label className="sr-only" htmlFor={`${title}-status`}>Filtrar por status</label><select id={`${title}-status`} className="h-11 rounded-md border bg-background px-3 text-sm" value={status} onChange={(event) => setStatus(event.target.value)}><option value="all">Todos os status</option><option value="received">Recebida</option><option value="reviewing">Em análise</option><option value="interview">Entrevista</option><option value="closed">Encerrada</option><option value="withdrawn">Cancelada pelo candidato</option></select></div>}
+      {loading ? <p className="py-5 text-sm text-muted-foreground">Carregando candidaturas…</p> : error ? <p role="alert" className="py-5 text-sm text-destructive">Não foi possível carregar esta lista. Atualize a página e tente novamente.</p> : filtered.length ? (
         <ul className="divide-y rounded-xl border bg-card">
-          {items.map(({ application, job }) => {
+          {filtered.map(({ application, job }) => {
             const name = incoming ? application.applicant_name : job.title;
             const detail = incoming ? job.title : (job.publisherName || job.company?.name || "Anunciante");
             return (
@@ -116,7 +125,7 @@ function ApplicationSection({ title, description, items, loading, error, incomin
             );
           })}
         </ul>
-      ) : <EmptyInbox icon="application" title={incoming ? "Nenhuma candidatura recebida" : "Você ainda não se candidatou"} description={incoming ? "Quando alguém se candidatar às suas vagas, a conversa aparecerá aqui." : "Encontre uma vaga e envie sua candidatura para começar."} action={<Button asChild variant="outline"><Link to={incoming ? "/publicar" : "/vagas"}>{incoming ? "Publicar vaga" : "Ver vagas"}</Link></Button>} />}
+      ) : items.length ? <p className="rounded-xl border p-5 text-sm text-muted-foreground">Nenhuma candidatura corresponde à busca e ao status selecionados.</p> : <EmptyInbox icon="application" title={incoming ? "Nenhuma candidatura recebida" : "Você ainda não se candidatou"} description={incoming ? "Quando alguém se candidatar às suas vagas, a conversa aparecerá aqui." : "Encontre uma vaga e envie sua candidatura para começar."} action={<Button asChild variant="outline"><Link to={incoming ? "/publicar" : "/vagas"}>{incoming ? "Publicar vaga" : "Ver vagas"}</Link></Button>} />}
     </section>
   );
 }

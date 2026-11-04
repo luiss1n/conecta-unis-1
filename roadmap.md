@@ -10,6 +10,10 @@ Este documento acompanha o estado do código. Itens marcados como implementados 
 - [x] Busca e filtros de vagas, páginas de empresas e estados vazios para dados reais.
 - [x] Candidaturas, conversas, mensagens e visualização do perfil do candidato pela conversa.
 - [x] Notificações privadas para a conta logada, com leitura e atualização de estado.
+- [x] Preferências de notificações por tipo e aviso ao responsável quando alguém se inscreve em um evento.
+- [x] Denúncia de vagas e eventos com fila restrita de análise no painel administrativo.
+- [x] Ocultar e restaurar vagas/eventos pelo painel, com visibilidade controlada por RLS.
+- [x] Busca e filtros por status para candidaturas recebidas.
 - [x] Alertas de vagas por perfil, área e cidade; catálogo da SRE Caxambu e cidades próximas até 20 km.
 - [x] Vagas salvas e calendário mensal de carreira com inscrições em eventos.
 - [x] Rascunhos de publicação sincronizados à conta de quem publica.
@@ -25,7 +29,8 @@ Este documento acompanha o estado do código. Itens marcados como implementados 
 3. [ ] Percorrer a jornada de empresa e professor: publicar, rascunho, editar, encerrar vaga e responder candidaturas.
 4. [ ] Percorrer a jornada de administração: criar, editar, encerrar e excluir vagas e eventos; conferir contagens e permissões.
 5. [ ] Confirmar persistência após sair e entrar novamente e conferir acesso a perfis e arquivos privados com contas diferentes.
-6. [ ] Revisar o componente de perfil demonstrativo que ainda usa dados simulados (`CandidateProfileCard`) e decidir se será substituído por dados reais ou removido.
+6. [x] Remover o componente de perfil demonstrativo e seus dados fictícios.
+7. [ ] Aplicar as migrations `0016_registration_rules_and_live_stats.sql` e `0017_notifications_and_moderation.sql` no Supabase e conferir preferências, denúncias e visibilidade com contas de papéis diferentes.
 
 ## Depois da validação: segurança e estabilidade
 
@@ -37,7 +42,7 @@ Este documento acompanha o estado do código. Itens marcados como implementados 
 
 ## Futuras funcionalidades
 
-- [ ] Melhorias de moderação e acompanhamento de publicações no painel administrativo, conforme necessidades encontradas na validação.
+- [ ] Integrar suspensão de contas à API administrativa confiável do Supabase, com trilha de auditoria.
 - [ ] Lembretes de eventos e alertas com preferências configuráveis pelo usuário.
 - [ ] Assistente de IA para orientar novos usuários, com escopo, fontes e permissões de dados definidos antes da integração.
 

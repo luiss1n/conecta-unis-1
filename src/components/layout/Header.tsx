@@ -145,7 +145,7 @@ export function Header() {
                 <Button asChild size="sm" className="hidden sm:inline-flex"><Link to="/admin"><ShieldCheck className="h-4 w-4" /> Painel admin</Link></Button>
               )}
               <Button asChild variant="ghost" size="sm" className="hidden sm:inline-flex"><Link to="/candidaturas">Candidaturas</Link></Button>
-              {isStudent && <Button asChild variant="ghost" size="sm" className="hidden md:inline-flex"><Link to="/alertas">Alertas</Link></Button>}
+              {session && <Button asChild variant="ghost" size="sm" className="hidden min-h-11 md:inline-flex"><Link to="/alertas">{isStudent ? "Alertas" : "Notificações"}</Link></Button>}
               {isStudent && <Button asChild variant="ghost" size="sm" className="hidden lg:inline-flex"><Link to="/vagas-salvas">Salvas</Link></Button>}
               {session && <Button asChild variant="ghost" size="sm" className="hidden lg:inline-flex"><Link to="/calendario">Calendário</Link></Button>}
               <Button asChild variant="outline" size="sm"><Link to="/perfil">Meu perfil</Link></Button>
@@ -182,7 +182,7 @@ export function Header() {
                   {session ? "Meu perfil" : "Entrar"}
                 </Link>
                 {session && <Link to="/candidaturas" onClick={() => setOpen(false)} className="rounded-md px-3 py-3 font-medium hover:bg-muted">Candidaturas e conversas</Link>}
-                {isStudent && <Link to="/alertas" onClick={() => setOpen(false)} className="rounded-md px-3 py-3 font-medium hover:bg-muted">Alertas de vagas</Link>}
+                {session && <Link to="/alertas" onClick={() => setOpen(false)} className="rounded-md px-3 py-3 font-medium hover:bg-muted">{isStudent ? "Alertas e notificações" : "Preferências de notificações"}</Link>}
                 {isStudent && <Link to="/vagas-salvas" onClick={() => setOpen(false)} className="rounded-md px-3 py-3 font-medium hover:bg-muted">Vagas salvas</Link>}
                 {session && <Link to="/calendario" onClick={() => setOpen(false)} className="rounded-md px-3 py-3 font-medium hover:bg-muted">Calendário de carreira</Link>}
                 {isAdmin && (

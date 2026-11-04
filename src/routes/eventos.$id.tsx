@@ -1,6 +1,7 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { CalendarDays, CheckCircle2, ChevronRight, Clock, MapPin, Tag } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ReportPublicationButton } from "@/components/common/ReportPublicationButton";
 import { useEventInterest } from "@/components/events/EventCard";
 import { formatEventDate } from "@/lib/jobs";
 import { getEvent } from "@/services/api";
@@ -54,6 +55,7 @@ function EventPage() {
             {done ? (<><CheckCircle2 className="h-4 w-4" /> Inscrição confirmada</>) : registering === event.id ? "Inscrevendo…" : "Inscrever-se"}
           </Button>
           <Button asChild size="lg" variant="outline"><Link to="/eventos">Outros eventos</Link></Button>
+          <ReportPublicationButton kind="event" targetRef={event.id} />
         </div>
         {done && <p className="mt-3 text-sm text-muted-foreground" aria-live="polite">Sua inscrição foi salva e pode ser consultada na área de candidaturas.</p>}
       </article>

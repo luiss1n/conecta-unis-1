@@ -36,6 +36,7 @@ export interface Job {
   publishedAt: string; // ISO date
   status?: "open" | "closed";
   closesAt?: string | null;
+  isHidden?: boolean;
 }
 
 export interface Company {
@@ -61,13 +62,7 @@ export interface CareerEvent {
   category: EventCategory;
   summary: string;
   description: string;
-}
-
-export interface CandidateProfile {
-  name: string;
-  course: string;
-  period: string;
-  skills: string[];
+  isHidden?: boolean;
 }
 
 export interface JobFilters {

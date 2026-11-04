@@ -3,9 +3,8 @@
  *
  * Vagas, empresas e eventos são lidos do Supabase (tabelas públicas, protegidas por RLS).
  * A interface consome apenas estas funções; as regras de quem pode escrever ficam nas policies do banco
- * (ver drizzle/migrations). `getCandidateProfile` ainda devolve um perfil de demonstração.
+ * (ver drizzle/migrations).
  */
-import { demoCandidate } from "@/data/demo";
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
 import { profileSchema, validateProfileFile, type ProfileValues, type ProfileFileKind } from "@/lib/profile";
@@ -18,6 +17,7 @@ type EventRow = Database["public"]["Tables"]["events"]["Row"];
 export type JobApplication = Database["public"]["Tables"]["job_applications"]["Row"];
 export type ApplicationMessage = Database["public"]["Tables"]["application_messages"]["Row"];
 export type UserNotification = Database["public"]["Tables"]["notifications"]["Row"];
+export type PublicationReport = Database["public"]["Tables"]["publication_reports"]["Row"];
 export type RegionalCity = { city: string; latitude: number; longitude: number; is_sre_caxambu: boolean };
 export type PublicationDraftKind = "job" | "event";
 export type PublicationDraft<T> = { payload: T; updated_at: string };
@@ -111,6 +111,29 @@ export async function markAllNotificationsRead(): Promise<void> {
   if (error) throw new Error("Não foi possível atualizar as notificações.");
 }
 
+export async function submitPublicationReport(kind: "job" | "event", targetRef: string, reason: string): Promise<void> {
+  await requireUser();
+  const value = reason.trim();
+  if (value.length < 10 || value.length > 1000) throw new Error("Explique o motivo com 10 a 1.000 caracteres.");
+  const { error } = await supabase.rpc("submit_publication_report", { _kind: kind, _target_ref: targetRef, _reason: value });
+  if (error) throw new Error("Não foi possível enviar a denúncia. Tente novamente.");
+}
+
+export async function getPublicationReports(): Promise<PublicationReport[]> {
+  await requireUser();
+  const role = await getMyRole();
+  if (role !== "admin") throw new Error("Acesso restrito à administração.");
+  const { data, error } = await supabase.from("publication_reports").select("*").order("created_at", { ascending: false }).limit(100);
+  if (error) throw new Error("Não foi possível carregar as denúncias.");
+  return data ?? [];
+}
+
+export async function reviewPublicationReport(id: string, status: "resolved" | "dismissed"): Promise<void> {
+  const user = await requireUser();
+  const { data, error } = await supabase.from("publication_reports").update({ status, reviewer_id: user.id, reviewed_at: new Date().toISOString() }).eq("id", id).eq("status", "pending").select("id");
+  if (error || !data?.length) throw new Error("Não foi possível atualizar esta denúncia.");
+}
+
 const TONES: readonly string[] = ["blue", "purple", "green", "amber"];
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -148,11 +171,12 @@ function toJob(r: JobRow, company?: Company): Job {
     publishedAt: r.publishedAt,
     status: r.status === "closed" ? "closed" : "open",
     closesAt: r.closes_at,
+    isHidden: r.is_hidden,
   };
 }
 
 export function isJobAvailable(job: Job): boolean {
-  return job.status === "open" && (!job.closesAt || Date.parse(job.closesAt) > Date.now());
+  return !job.isHidden && job.status === "open" && (!job.closesAt || Date.parse(job.closesAt) > Date.now());
 }
 
 function toEvent(r: EventRow): CareerEvent {
@@ -166,6 +190,7 @@ function toEvent(r: EventRow): CareerEvent {
     category: r.category as CareerEvent["category"],
     summary: r.summary,
     description: r.description,
+    isHidden: r.is_hidden,
   };
 }
 
@@ -387,8 +412,6 @@ export async function getApplicationResumeUrl(application: JobApplication): Prom
   return data.signedUrl;
 }
 
-export const getCandidateProfile = () => demoCandidate;
-
 /** Papel da conta logada (null se deslogado ou sem cadastro). Usado para exibir o menu de admin. */
 export async function getMyRole() {
   const { data: u } = await supabase.auth.getUser();
@@ -609,6 +632,14 @@ export async function saveEventAsAdmin(values: NewEventValues, id?: string) {
 export async function deleteEvent(id: string) {
   const { data, error } = await supabase.from("events").delete().eq("id", id).select("id");
   if (error || !data?.length) throw new Error("Não foi possível excluir o evento.");
+}
+
+export async function setPublicationHidden(kind: "job" | "event", targetRef: string, hidden: boolean): Promise<void> {
+  if (await getMyRole() !== "admin") throw new Error("Acesso restrito à administração.");
+  const result = kind === "job"
+    ? await supabase.from("jobs").update({ is_hidden: hidden }).eq("slug", targetRef).select("slug")
+    : await supabase.from("events").update({ is_hidden: hidden }).eq("id", targetRef).select("id");
+  if (result.error || !result.data?.length) throw new Error("Não foi possível alterar a visibilidade desta publicação.");
 }
 
 export async function removeProfileFile(kind: ProfileFileKind) {

@@ -2,6 +2,7 @@ import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { Briefcase, CalendarDays, CheckCircle2, ChevronRight, Clock, Gift, MapPin, Monitor } from "lucide-react";
 import type { ReactNode } from "react";
 import { CompanyAvatar } from "@/components/common/CompanyAvatar";
+import { ReportPublicationButton } from "@/components/common/ReportPublicationButton";
 import { ApplicationConsent } from "@/components/jobs/ApplicationConsent";
 import { SaveJobButton } from "@/components/jobs/SaveJobButton";
 import { JobTypeBadge } from "@/components/jobs/JobCard";
@@ -97,7 +98,7 @@ function JobDetails() {
               <p className="mt-1 font-medium text-primary">{publisher}</p>
             )}
           </div>
-          <div className="sm:ml-auto"><SaveJobButton job={job} compact /></div>
+          <div className="flex flex-wrap items-center gap-2 sm:ml-auto"><SaveJobButton job={job} compact /><ReportPublicationButton kind="job" targetRef={job.slug} /></div>
         </div>
         <ul className="mt-6 flex flex-wrap gap-x-6 gap-y-2 text-sm text-muted-foreground">
           {meta.map(({ icon: Icon, label }) => (

@@ -50,6 +50,18 @@ export type Database = {
         Update: { actor_id?: string | null; body?: string; created_at?: string; id?: string; read_at?: string | null; recipient_id?: string; target_path?: string; title?: string }
         Relationships: []
       }
+      notification_preferences: {
+        Row: { user_id: string; platform_posts: boolean; application_updates: boolean; messages: boolean; event_registrations: boolean; updated_at: string }
+        Insert: { user_id: string; platform_posts?: boolean; application_updates?: boolean; messages?: boolean; event_registrations?: boolean; updated_at?: string }
+        Update: { user_id?: string; platform_posts?: boolean; application_updates?: boolean; messages?: boolean; event_registrations?: boolean; updated_at?: string }
+        Relationships: [{ foreignKeyName: "notification_preferences_user_id_fkey"; columns: ["user_id"]; isOneToOne: true; referencedRelation: "profiles"; referencedColumns: ["id"] }]
+      }
+      publication_reports: {
+        Row: { id: string; reporter_id: string; target_kind: string; target_ref: string; reason: string; status: string; created_at: string; reviewed_at: string | null; reviewer_id: string | null }
+        Insert: { id?: string; reporter_id: string; target_kind: string; target_ref: string; reason: string; status?: string; created_at?: string; reviewed_at?: string | null; reviewer_id?: string | null }
+        Update: { id?: string; reporter_id?: string; target_kind?: string; target_ref?: string; reason?: string; status?: string; created_at?: string; reviewed_at?: string | null; reviewer_id?: string | null }
+        Relationships: []
+      }
       application_messages: {
         Row: { application_id: string; body: string; created_at: string; id: string; sender_id: string }
         Insert: { application_id: string; body: string; created_at?: string; id?: string; sender_id: string }
@@ -199,6 +211,7 @@ export type Database = {
           description: string
           endTime: string
           id: string
+          is_hidden: boolean
           location: string
           mode: string
           owner_id: string
@@ -211,6 +224,7 @@ export type Database = {
           description: string
           endTime: string
           id?: string
+          is_hidden?: boolean
           location: string
           mode: string
           owner_id: string
@@ -223,6 +237,7 @@ export type Database = {
           description?: string
           endTime?: string
           id?: string
+          is_hidden?: boolean
           location?: string
           mode?: string
           owner_id?: string
@@ -246,6 +261,7 @@ export type Database = {
           category: string
           city: string
           closes_at: string | null
+          is_hidden: boolean
           companySlug: string | null
           description: string
           mode: string
@@ -267,6 +283,7 @@ export type Database = {
           category: string
           city: string
           closes_at?: string | null
+          is_hidden?: boolean
           companySlug?: string | null
           description: string
           mode: string
@@ -288,6 +305,7 @@ export type Database = {
           category?: string
           city?: string
           closes_at?: string | null
+          is_hidden?: boolean
           companySlug?: string | null
           description?: string
           mode?: string
@@ -443,6 +461,7 @@ export type Database = {
       }
       save_registration: { Args: { payload: Json }; Returns: undefined }
       save_publication_draft: { Args: { _kind: string; _payload: Json; _updated_at: string }; Returns: undefined }
+      submit_publication_report: { Args: { _kind: string; _target_ref: string; _reason: string }; Returns: string }
       submit_job_application: { Args: { _consent: boolean; _cover_message?: string; _job_slug: string }; Returns: string }
       update_job_application_status: { Args: { _application_id: string; _status: string }; Returns: undefined }
     }

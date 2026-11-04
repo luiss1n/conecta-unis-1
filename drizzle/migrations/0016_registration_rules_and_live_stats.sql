@@ -62,6 +62,7 @@ BEGIN
      OR chosen_username !~ '^[[:alnum:][:punct:]]+$'
      OR chosen_username !~ '[[:alnum:]]'
      OR coalesce(char_length(trim(payload->>'city')),0) NOT BETWEEN 2 AND 100
+     OR char_length(phone_value) > 15
      OR (phone_value <> '' AND phone_value !~ '^\([0-9]{2}\) [0-9]{5}-[0-9]{4}$')
      OR char_length(coalesce(payload->>'bio','')) > 2000 THEN
     RAISE EXCEPTION 'Invalid profile';

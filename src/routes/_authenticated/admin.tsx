@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { CalendarDays, Plus, Search, ShieldCheck, Trash2 } from "lucide-react";
+import { CalendarDays, Flag, Plus, Search, ShieldCheck, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { EmptyState } from "@/components/common/EmptyState";
@@ -30,6 +30,9 @@ import {
   getJobs,
   getAdminApplicationCounts,
   getMyRole,
+  getPublicationReports,
+  reviewPublicationReport,
+  setPublicationHidden,
   saveEventAsAdmin,
   saveJobAsAdmin,
 } from "@/services/api";
@@ -47,13 +50,13 @@ export const Route = createFileRoute("/_authenticated/admin")({
 
 type Editing = { kind: "job"; item?: Job } | { kind: "event"; item?: CareerEvent } | null;
 
-function PublicationFilters({ filter, onFilter, search, onSearch }: { filter: "all" | "active" | "closed"; onFilter: (filter: "all" | "active" | "closed") => void; search: string; onSearch: (value: string) => void }) {
+function PublicationFilters({ filter, onFilter, search, onSearch }: { filter: "all" | "active" | "closed" | "hidden"; onFilter: (filter: "all" | "active" | "closed" | "hidden") => void; search: string; onSearch: (value: string) => void }) {
   return <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
     <label className="flex flex-1 flex-col gap-1 text-sm font-medium">Buscar publicação
       <span className="flex h-10 items-center gap-2 rounded-md border px-3"><Search className="h-4 w-4 text-muted-foreground" /><input value={search} onChange={(event) => onSearch(event.target.value)} className="min-w-0 flex-1 bg-transparent outline-none" placeholder="Título, cidade ou publicador" /></span>
     </label>
     <label className="flex flex-col gap-1 text-sm font-medium">Status
-      <select value={filter} onChange={(event) => onFilter(event.target.value as typeof filter)} className="h-10 rounded-md border bg-background px-3"><option value="all">Todas</option><option value="active">Ativas</option><option value="closed">Encerradas</option></select>
+      <select value={filter} onChange={(event) => onFilter(event.target.value as typeof filter)} className="h-10 rounded-md border bg-background px-3"><option value="all">Todas</option><option value="active">Ativas</option><option value="closed">Encerradas</option><option value="hidden">Ocultas</option></select>
     </label>
   </div>;
 }
@@ -88,13 +91,34 @@ function AdminPage() {
   const events = useQuery({ queryKey: ["admin-events"], queryFn: () => getEvents(), enabled: isAdmin });
   const companies = useQuery({ queryKey: ["admin-companies"], queryFn: getCompanies, enabled: isAdmin });
   const applicationCounts = useQuery({ queryKey: ["admin-application-counts"], queryFn: getAdminApplicationCounts, enabled: isAdmin, staleTime: 60_000 });
+  const reports = useQuery({ queryKey: ["admin-publication-reports"], queryFn: getPublicationReports, enabled: isAdmin });
   const [editing, setEditing] = useState<Editing>(null);
   const [tab, setTab] = useState("vagas");
-  const [publicationFilter, setPublicationFilter] = useState<"all" | "active" | "closed">("all");
+  const [publicationFilter, setPublicationFilter] = useState<"all" | "active" | "closed" | "hidden">("all");
   const [search, setSearch] = useState("");
 
   const refresh = () =>
-    Promise.all(["admin-jobs", "admin-events", "admin-companies"].map((k) => qc.invalidateQueries({ queryKey: [k] })));
+    Promise.all(["admin-jobs", "admin-events", "admin-companies", "admin-publication-reports"].map((k) => qc.invalidateQueries({ queryKey: [k] })));
+
+  async function reviewReport(id: string, status: "resolved" | "dismissed") {
+    try {
+      await reviewPublicationReport(id, status);
+      await qc.invalidateQueries({ queryKey: ["admin-publication-reports"] });
+      toast.success(status === "resolved" ? "Denúncia marcada como analisada." : "Denúncia arquivada.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Não foi possível atualizar a denúncia.");
+    }
+  }
+
+  async function changeVisibility(kind: "job" | "event", targetRef: string, hidden: boolean) {
+    try {
+      await setPublicationHidden(kind, targetRef, hidden);
+      await Promise.all([qc.invalidateQueries({ queryKey: ["admin-jobs"] }), qc.invalidateQueries({ queryKey: ["admin-events"] })]);
+      toast.success(hidden ? "Publicação ocultada para usuários." : "Publicação voltou a ficar visível.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Não foi possível alterar a visibilidade.");
+    }
+  }
 
   async function remove(action: () => Promise<void>, done: string) {
     try {
@@ -130,13 +154,13 @@ function AdminPage() {
   const eventList = events.data ?? [];
   const visibleJobs = jobList.filter((job) => {
     const unavailable = job.status === "closed" || (!!job.closesAt && Date.parse(job.closesAt) <= Date.now());
-    const matchesState = publicationFilter === "all" || (publicationFilter === "closed" ? unavailable : !unavailable);
+    const matchesState = publicationFilter === "all" || (publicationFilter === "hidden" ? !!job.isHidden : !job.isHidden && (publicationFilter === "closed" ? unavailable : !unavailable));
     const query = search.trim().toLocaleLowerCase("pt-BR");
     return matchesState && (!query || `${job.title} ${job.city} ${jobPublisher(job)}`.toLocaleLowerCase("pt-BR").includes(query));
   });
   const visibleEvents = eventList.filter((event) => {
     const past = new Date(event.date).getTime() < Date.now();
-    const matchesState = publicationFilter === "all" || (publicationFilter === "active" ? !past : past);
+    const matchesState = publicationFilter === "all" || (publicationFilter === "hidden" ? !!event.isHidden : !event.isHidden && (publicationFilter === "active" ? !past : past));
     const query = search.trim().toLocaleLowerCase("pt-BR");
     return matchesState && (!query || `${event.title} ${event.location} ${event.category}`.toLocaleLowerCase("pt-BR").includes(query));
   });
@@ -208,6 +232,7 @@ function AdminPage() {
           <TabsList>
             <TabsTrigger value="vagas">Vagas ({jobList.length})</TabsTrigger>
             <TabsTrigger value="eventos">Eventos ({eventList.length})</TabsTrigger>
+            <TabsTrigger value="denuncias"><Flag className="mr-1 h-4 w-4" />Denúncias ({(reports.data ?? []).filter((report) => report.status === "pending").length})</TabsTrigger>
           </TabsList>
 
           <TabsContent value="vagas" className="mt-5">
@@ -223,12 +248,13 @@ function AdminPage() {
                     <div className="min-w-0 flex-1">
                       <p className="truncate font-bold">{j.title}</p>
                       <p className="truncate text-sm text-muted-foreground">
-                        {jobPublisher(j)} · {j.city} · {typeLabel[j.type]} · {formatDate(j.publishedAt)} · {j.status === "closed" || (j.closesAt && Date.parse(j.closesAt) <= Date.now()) ? "Encerrada" : "Ativa"}{j.closesAt ? ` · limite ${formatDate(j.closesAt)}` : ""} · {applicationCounts.data?.[j.slug] ?? 0} candidaturas
+                        {jobPublisher(j)} · {j.city} · {typeLabel[j.type]} · {formatDate(j.publishedAt)} · {j.isHidden ? "Oculta" : j.status === "closed" || (j.closesAt && Date.parse(j.closesAt) <= Date.now()) ? "Encerrada" : "Ativa"}{j.closesAt ? ` · limite ${formatDate(j.closesAt)}` : ""} · {applicationCounts.data?.[j.slug] ?? 0} candidaturas
                       </p>
                     </div>
                     <div className="flex flex-wrap gap-1">
                       <Button asChild variant="ghost" size="sm"><Link to="/vagas/$slug" params={{ slug: j.slug }}>Ver</Link></Button>
                       <Button variant="outline" size="sm" onClick={() => setEditing({ kind: "job", item: j })}>Editar</Button>
+                      <Button variant="outline" size="sm" className="min-h-11" onClick={() => void changeVisibility("job", j.slug, !j.isHidden)}>{j.isHidden ? "Restaurar" : "Ocultar"}</Button>
                       {j.status === "open" && !(j.closesAt && Date.parse(j.closesAt) <= Date.now()) && <Button variant="outline" size="sm" onClick={() => void closePublishedJob(j.slug)}>Encerrar</Button>}
                       <ConfirmDelete title={j.title} onConfirm={() => remove(() => deleteJob(j.slug), "Vaga excluída.")} />
                     </div>
@@ -252,12 +278,13 @@ function AdminPage() {
                   return (
                     <li key={e.id} className="flex flex-col gap-3 rounded-xl border bg-card p-4 shadow-card sm:flex-row sm:items-center">
                       <div className="min-w-0 flex-1">
-                        <p className="truncate font-bold">{e.title}{past && <span className="ml-2 rounded-full bg-muted px-2 py-0.5 text-xs font-semibold text-muted-foreground">Encerrado</span>}</p>
+                        <p className="truncate font-bold">{e.title}{e.isHidden ? <span className="ml-2 rounded-full bg-muted px-2 py-0.5 text-xs font-semibold text-muted-foreground">Oculto</span> : past && <span className="ml-2 rounded-full bg-muted px-2 py-0.5 text-xs font-semibold text-muted-foreground">Encerrado</span>}</p>
                         <p className="truncate text-sm text-muted-foreground">{d.day} {d.month}, {d.time} · {e.location} · {e.category}</p>
                       </div>
                       <div className="flex flex-wrap gap-1">
                         <Button asChild variant="ghost" size="sm"><Link to="/eventos/$id" params={{ id: e.id }}>Ver</Link></Button>
                         <Button variant="outline" size="sm" onClick={() => setEditing({ kind: "event", item: e })}>Editar</Button>
+                        <Button variant="outline" size="sm" className="min-h-11" onClick={() => void changeVisibility("event", e.id, !e.isHidden)}>{e.isHidden ? "Restaurar" : "Ocultar"}</Button>
                         <ConfirmDelete title={e.title} onConfirm={() => remove(() => deleteEvent(e.id), "Evento excluído.")} />
                       </div>
                     </li>
@@ -265,6 +292,11 @@ function AdminPage() {
                 })}
               </ul>
             )}
+          </TabsContent>
+
+          <TabsContent value="denuncias" className="mt-5">
+            <p className="mb-4 text-sm text-muted-foreground">Analise relatos de usuários. A análise não remove automaticamente a publicação; use as ações de vagas ou eventos após revisar o conteúdo.</p>
+            {reports.isLoading ? <p className="text-sm text-muted-foreground">Carregando denúncias…</p> : reports.isError ? <p role="alert" className="text-sm text-destructive">Não foi possível carregar as denúncias. Confira se a migration de moderação foi aplicada.</p> : reports.data?.length ? <ul className="space-y-3">{reports.data.map((report) => { const hidden = report.target_kind === "job" ? jobList.find((job) => job.slug === report.target_ref)?.isHidden : eventList.find((event) => event.id === report.target_ref)?.isHidden; return <li key={report.id} className="rounded-xl border bg-card p-4"><div className="flex flex-wrap items-start justify-between gap-3"><div className="min-w-0"><p className="break-all font-semibold">{report.target_kind === "job" ? "Vaga" : "Evento"} · {report.target_ref}</p><p className="mt-1 whitespace-pre-wrap text-sm text-muted-foreground">{report.reason}</p><p className="mt-2 text-xs text-muted-foreground">{new Date(report.created_at).toLocaleString("pt-BR")} · {report.status === "pending" ? "Pendente" : report.status === "resolved" ? "Analisada" : "Arquivada"}</p></div><div className="flex flex-wrap gap-2">{report.target_kind === "job" ? <><Button asChild size="sm" variant="outline" className="min-h-11"><Link to="/vagas/$slug" params={{ slug: report.target_ref }}>Abrir vaga</Link></Button><Button size="sm" variant="outline" className="min-h-11" onClick={() => void changeVisibility("job", report.target_ref, !hidden)}>{hidden ? "Restaurar" : "Ocultar"}</Button></> : <><Button asChild size="sm" variant="outline" className="min-h-11"><Link to="/eventos/$id" params={{ id: report.target_ref }}>Abrir evento</Link></Button><Button size="sm" variant="outline" className="min-h-11" onClick={() => void changeVisibility("event", report.target_ref, !hidden)}>{hidden ? "Restaurar" : "Ocultar"}</Button></>}{report.status === "pending" && <><Button size="sm" className="min-h-11" onClick={() => void reviewReport(report.id, "resolved")}>Marcar analisada</Button><Button size="sm" variant="outline" className="min-h-11" onClick={() => void reviewReport(report.id, "dismissed")}>Arquivar</Button></>}</div></div></li>; })}</ul> : <EmptyState title="Nenhuma denúncia recebida" description="As denúncias enviadas pelos usuários aparecerão aqui." />}
           </TabsContent>
         </Tabs>
 
