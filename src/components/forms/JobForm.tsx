@@ -5,8 +5,6 @@ import { DEFAULT_PUBLISHER } from "@/lib/jobs";
 import { deletePublicationDraft, getPublicationDraft, savePublicationDraft, type NewJobValues } from "@/services/api";
 import type { Company, Job } from "@/types";
 import { Field, areaCls, inputCls, lines } from "./fields";
-import { useQuery } from "@tanstack/react-query";
-import { getRegionalCities } from "@/services/api";
 
 type Values = NewJobValues & { companySlug: string | null; publisherName: string | null };
 
@@ -30,7 +28,6 @@ export function JobForm({ initial, admin = false, companies = [], submitLabel, s
   const [draftStatus, setDraftStatus] = useState("Carregando rascunho da conta…");
   const submitSucceeded = useRef(false);
   const isEditing = !!initial;
-  const { data: regionalCities = [], isLoading: citiesLoading, isError: citiesError } = useQuery({ queryKey: ["regional-cities"], queryFn: getRegionalCities, staleTime: 24 * 60 * 60 * 1000 });
   const [form, setForm] = useState({
     title: initial?.title ?? "",
     type: initial?.type ?? "estagio",
@@ -47,34 +44,6 @@ export function JobForm({ initial, admin = false, companies = [], submitLabel, s
     companySlug: initial?.companySlug ?? "",
     publisherName: initial?.publisherName ?? DEFAULT_PUBLISHER,
   });
-  const [citySuggestions, setCitySuggestions] = useState<string[]>([]);
-  const [citySuggestionsError, setCitySuggestionsError] = useState(false);
-  const [citySuggestionsLoading, setCitySuggestionsLoading] = useState(false);
-  const [cityMenuOpen, setCityMenuOpen] = useState(false);
-  const cityRequest = useRef(0);
-  useEffect(() => {
-    const query = form.city.trim();
-    if (query.length < 2) { setCitySuggestions([]); setCityMenuOpen(false); return; }
-    const request = ++cityRequest.current;
-    const timer = window.setTimeout(async () => {
-      setCitySuggestionsLoading(true);
-      setCitySuggestionsError(false);
-      try {
-        const response = await fetch(`https://servicodados.ibge.gov.br/api/v1/localidades/municipios?nome=${encodeURIComponent(query)}`);
-        if (!response.ok) throw new Error("Falha ao buscar municípios");
-        const data = await response.json() as Array<{ nome: string; microrregiao?: { mesorregiao?: { UF?: { sigla: string } } }; "regiao-imediata"?: { "regiao-intermediaria"?: { UF?: { sigla: string } } } }>;
-        if (request !== cityRequest.current) return;
-        const suggestions = [...new Set(data.map((item) => `${item.nome} - ${item.microrregiao?.mesorregiao?.UF?.sigla ?? item["regiao-imediata"]?.["regiao-intermediaria"]?.UF?.sigla ?? "Brasil"}`))].slice(0, 10);
-        setCitySuggestions(suggestions);
-        setCityMenuOpen(true);
-      } catch {
-        if (request === cityRequest.current) setCitySuggestionsError(true);
-      } finally {
-        if (request === cityRequest.current) setCitySuggestionsLoading(false);
-      }
-    }, 300);
-    return () => window.clearTimeout(timer);
-  }, [form.city]);
   useEffect(() => {
     if (isEditing || admin) { setDraftReady(true); return; }
     let active = true;
@@ -181,11 +150,8 @@ export function JobForm({ initial, admin = false, companies = [], submitLabel, s
           </select>
         </Field>
         <Field label="Cidade">
-          <div className="relative">
-            <input className={inputCls} value={form.city} onChange={(event) => { set("city")(event); setCityMenuOpen(true); }} onFocus={() => { if (form.city.trim().length >= 2) setCityMenuOpen(true); }} onBlur={() => window.setTimeout(() => setCityMenuOpen(false), 150)} autoComplete="address-level2" role="combobox" aria-autocomplete="list" aria-expanded={cityMenuOpen && citySuggestions.length > 0} aria-controls="job-city-suggestions" required maxLength={100} placeholder="Digite uma cidade do Brasil" />
-            {cityMenuOpen && form.city.trim().length >= 2 && <ul id="job-city-suggestions" role="listbox" className="absolute z-20 mt-1 max-h-60 w-full overflow-y-auto rounded-md border bg-popover p-1 text-popover-foreground shadow-lg">{citySuggestionsLoading && <li className="px-3 py-2 text-sm text-muted-foreground">Buscando cidades…</li>}{!citySuggestionsLoading && citySuggestions.map((city) => <li key={city} role="option" aria-selected={form.city === city}><button type="button" className="w-full rounded px-3 py-2 text-left text-sm hover:bg-accent focus-visible:bg-accent" onMouseDown={(event) => event.preventDefault()} onClick={() => { setForm((current) => ({ ...current, city })); setCityMenuOpen(false); }}>{city}</button></li>)}{!citySuggestionsLoading && !citySuggestions.length && <li className="px-3 py-2 text-sm text-muted-foreground">{citySuggestionsError ? "Não foi possível buscar sugestões. Você pode manter a cidade digitada." : "Nenhuma sugestão encontrada. Você pode manter a cidade digitada."}</li>}</ul>}
-          </div>
-          <p className="text-xs text-muted-foreground">Digite para ver sugestões de municípios do IBGE ou informe a cidade manualmente.</p>
+          <input className={inputCls} value={form.city} onChange={set("city")} required maxLength={100} autoComplete="address-level2" placeholder="Ex.: São Lourenço" />
+          <p className="text-xs text-muted-foreground">Digite o nome da cidade, incluindo acentos se houver.</p>
         </Field>
         <Field label="Salário / bolsa (opcional)">
           <input className={inputCls} value={form.salary} onChange={set("salary")} maxLength={100} placeholder="Ex.: R$ 1.500" />
