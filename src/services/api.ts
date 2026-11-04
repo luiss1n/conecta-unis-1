@@ -336,6 +336,26 @@ export async function submitJobApplication(jobSlug: string, coverMessage: string
 
 export type ApplicationListItem = { application: JobApplication; job: Job };
 
+export type ApplicationNextStepsData = {
+  checklist: Record<string, boolean>;
+  reflection: string;
+};
+
+export async function getApplicationNextSteps(applicationId: string): Promise<ApplicationNextStepsData | null> {
+  await requireUser();
+  const { data, error } = await supabase.from("application_next_steps").select("checklist,reflection").eq("application_id", applicationId).maybeSingle();
+  if (error) throw new Error("Não foi possível carregar seu plano de candidatura.");
+  return data as ApplicationNextStepsData | null;
+}
+
+export async function saveApplicationNextSteps(applicationId: string, value: ApplicationNextStepsData): Promise<void> {
+  const user = await requireUser();
+  const checklist = Object.fromEntries(Object.entries(value.checklist).filter(([key, checked]) => ["review_job", "tailor_resume", "prepare_examples", "prepare_questions"].includes(key) && typeof checked === "boolean"));
+  const reflection = value.reflection.trim().slice(0, 2000);
+  const { error } = await supabase.from("application_next_steps").upsert({ application_id: applicationId, applicant_id: user.id, checklist, reflection, updated_at: new Date().toISOString() }, { onConflict: "application_id" });
+  if (error) throw new Error("Não foi possível salvar seu plano de candidatura.");
+}
+
 async function attachApplicationJobs(rows: JobApplication[]): Promise<ApplicationListItem[]> {
   const slugs = [...new Set(rows.map((row) => row.job_slug))];
   const jobs = await Promise.all(slugs.map(async (slug) => [slug, await getJob(slug)] as const));

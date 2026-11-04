@@ -4,6 +4,7 @@ import { BriefcaseBusiness, CalendarDays, MessageCircle, UserRound } from "lucid
 import type { ReactNode } from "react";
 import { PageHeader } from "@/components/common/PageHeader";
 import { Button } from "@/components/ui/button";
+import { ApplicationNextSteps } from "@/components/jobs/ApplicationNextSteps";
 import { closeJob, getMyAlertPreferences, getMyApplications, getMyEventRegistrations, getMyProfile, getMyPublishedJobs, getMyRole, getMySavedJobSlugs, getReceivedApplications, type ApplicationListItem } from "@/services/api";
 import { toast } from "sonner";
 import { useMemo, useState } from "react";
@@ -62,7 +63,7 @@ function ApplicationsInbox() {
         {role === "visitor" && <section className="rounded-xl border bg-primary-soft/50 p-5"><h2 className="font-bold">Seu próximo passo</h2><p className="mt-1 font-semibold">{studentProfile.isLoading || alertPreferences.isLoading || savedJobs.isLoading ? "Carregando suas recomendações…" : nextStep.title}</p><p className="mt-1 text-sm text-muted-foreground">{studentProfile.isLoading || alertPreferences.isLoading || savedJobs.isLoading ? "" : nextStep.detail}</p><div className="mt-4 flex flex-wrap gap-2"><Button asChild size="sm"><Link to={nextStep.to}>{nextStep.label}</Link></Button><Button asChild variant="outline" size="sm"><Link to="/alertas">Alertas</Link></Button><Button asChild variant="outline" size="sm"><Link to="/vagas-salvas">Vagas salvas</Link></Button><Button asChild variant="outline" size="sm"><Link to="/perfil">Meu perfil</Link></Button></div></section>}
         {(role === "company" || role === "professor") && <section aria-labelledby="published-jobs-title"><h2 id="published-jobs-title" className="mb-4 text-xl font-bold">Minhas vagas publicadas</h2>{publishedJobs.isLoading ? <p className="text-sm text-muted-foreground">Carregando vagas…</p> : publishedJobs.isError ? <p role="alert" className="text-sm text-destructive">Não foi possível carregar suas vagas publicadas.</p> : publishedJobs.data?.length ? <ul className="divide-y rounded-xl border bg-card">{publishedJobs.data.map((job) => { const expired = !!job.closesAt && Date.parse(job.closesAt) <= Date.now(); const closed = job.status === "closed" || expired; return <li key={job.slug} className="flex items-center gap-3 p-4"><BriefcaseBusiness className="h-5 w-5 shrink-0 text-primary" /><span className="min-w-0 flex-1"><span className="block truncate font-semibold">{job.title}</span><span className="text-sm text-muted-foreground">{job.city} · {closed ? "Encerrada" : "Ativa"}</span></span><Button asChild size="sm" variant="outline"><Link to="/vagas/$slug" params={{ slug: job.slug }}>Ver</Link></Button>{!closed && <Button size="sm" variant="outline" onClick={() => void finishJob(job.slug)}>Encerrar</Button>}</li>; })}</ul> : <p className="rounded-xl border p-4 text-sm text-muted-foreground">Você ainda não publicou vagas. <Link className="font-medium text-primary underline" to="/publicar">Publicar vaga</Link></p>}</section>}
         {canReceive && <ApplicationSection title="Candidaturas recebidas" description="Converse com quem se candidatou às suas vagas." items={received.data ?? []} loading={received.isLoading} error={received.isError} incoming />}
-        {canApply && <ApplicationSection title="Minhas candidaturas" description="Veja o andamento das suas inscrições e abra a conversa com o anunciante." items={sent.data ?? []} loading={sent.isLoading} error={sent.isError} />}
+        {canApply && <ApplicationSection title="Minhas candidaturas" description="Veja o andamento das suas inscrições e abra a conversa com o anunciante." items={sent.data ?? []} loading={sent.isLoading} error={sent.isError} profileText={studentProfile.data ? `${studentProfile.data.profile.headline} ${studentProfile.data.profile.education} ${studentProfile.data.profile.institution} ${studentProfile.data.profile.bio}` : ""} />}
         {canApply && (
           <section aria-labelledby="event-registrations-title">
             <div className="mb-4">
@@ -90,8 +91,8 @@ function ApplicationsInbox() {
   );
 }
 
-function ApplicationSection({ title, description, items, loading, error, incoming = false }: {
-  title: string; description: string; items: ApplicationListItem[]; loading: boolean; error: boolean; incoming?: boolean;
+function ApplicationSection({ title, description, items, loading, error, incoming = false, profileText = "" }: {
+  title: string; description: string; items: ApplicationListItem[]; loading: boolean; error: boolean; incoming?: boolean; profileText?: string;
 }) {
   const [status, setStatus] = useState("all");
   const [search, setSearch] = useState("");
@@ -121,6 +122,7 @@ function ApplicationSection({ title, description, items, loading, error, incomin
                   <span className="hidden text-xs text-muted-foreground md:inline">{new Date(application.updated_at).toLocaleDateString("pt-BR")}</span>
                   <MessageCircle className="h-4 w-4 shrink-0 text-muted-foreground" aria-label="Abrir conversa" />
                 </Link>
+                {!incoming && <div className="px-4 pb-4"><ApplicationNextSteps item={{ application, job }} profileText={profileText} /></div>}
               </li>
             );
           })}
