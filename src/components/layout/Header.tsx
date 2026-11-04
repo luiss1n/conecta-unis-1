@@ -7,7 +7,12 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { useSession } from "@/hooks/use-session";
 import { supabase } from "@/integrations/supabase/client";
-import { getMyNotifications, getMyRole, markAllNotificationsRead, markNotificationRead } from "@/services/api";
+import {
+  getMyNotifications,
+  getMyRole,
+  markAllNotificationsRead,
+  markNotificationRead,
+} from "@/services/api";
 import symbolLogo from "@/assets/conecta-unis-symbol.jpeg";
 import wordmarkLogo from "@/assets/conecta-unis-wordmark.png";
 
@@ -18,10 +23,41 @@ const nav = [
   { to: "/eventos", label: "Eventos" },
 ] as const;
 
+function accountNav(role: string | undefined) {
+  if (role === "company" || role === "professor") {
+    return [
+      { to: "/publicar" as const, label: "Publicar vaga" },
+      { to: "/candidaturas" as const, label: "Candidaturas" },
+      { to: "/calendario" as const, label: "Calendário" },
+    ];
+  }
+  if (role === "visitor") {
+    return [
+      { to: "/candidaturas" as const, label: "Minhas candidaturas" },
+      { to: "/vagas-salvas" as const, label: "Vagas salvas" },
+      { to: "/alertas" as const, label: "Alertas" },
+      { to: "/calendario" as const, label: "Calendário" },
+    ];
+  }
+  if (role === "admin") return [{ to: "/admin" as const, label: "Painel admin" }];
+  if (role === undefined) return [];
+  return [{ to: "/cadastro" as const, label: "Completar cadastro" }];
+}
+
 export function Logo({ dark = false }: { dark?: boolean }) {
   return (
-    <Link to="/" aria-label="Conecta Unis — início" className="flex shrink-0 items-center gap-2 rounded-md focus-visible:outline-2 focus-visible:outline-ring">
-      <img src={symbolLogo} alt="" className="h-9 w-9 shrink-0 rounded-full object-cover" width={36} height={36} />
+    <Link
+      to="/"
+      aria-label="Conecta Unis — início"
+      className="flex shrink-0 items-center gap-2 rounded-md focus-visible:outline-2 focus-visible:outline-ring"
+    >
+      <img
+        src={symbolLogo}
+        alt=""
+        className="h-9 w-9 shrink-0 rounded-full object-cover"
+        width={36}
+        height={36}
+      />
       <img
         src={wordmarkLogo}
         alt="Conecta Unis"
@@ -38,12 +74,25 @@ export function Header() {
   const { session } = useSession();
   const navigate = useNavigate();
   const qc = useQueryClient();
-  const { data: role } = useQuery({ queryKey: ["my-role"], queryFn: getMyRole, enabled: !!session });
-  const { data: notifications = [] } = useQuery({ queryKey: ["my-notifications", session?.user.id], queryFn: getMyNotifications, enabled: !!session, refetchInterval: 30_000 });
+  const { data: role } = useQuery({
+    queryKey: ["my-role"],
+    queryFn: getMyRole,
+    enabled: !!session,
+  });
+  const { data: notifications = [] } = useQuery({
+    queryKey: ["my-notifications", session?.user.id],
+    queryFn: getMyNotifications,
+    enabled: !!session,
+    refetchInterval: 30_000,
+  });
   const isAdmin = role === "admin";
   const isStudent = role === "visitor";
   const canPublish = role === "company" || role === "professor";
-  const unreadCount = useMemo(() => notifications.filter((notification) => !notification.read_at).length, [notifications]);
+  const roleLinks = accountNav(role);
+  const unreadCount = useMemo(
+    () => notifications.filter((notification) => !notification.read_at).length,
+    [notifications],
+  );
   async function markAsRead(id: string) {
     await markNotificationRead(id);
     await qc.invalidateQueries({ queryKey: ["my-notifications", session?.user.id] });
@@ -77,82 +126,121 @@ export function Header() {
           ))}
         </nav>
         <div className="ml-auto flex items-center gap-1.5 sm:gap-2">
-          {session && <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                aria-label={unreadCount > 0 ? `Notificações, ${unreadCount} não lidas` : "Notificações"}
-                className="relative"
+          {session && (
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  aria-label={
+                    unreadCount > 0 ? `Notificações, ${unreadCount} não lidas` : "Notificações"
+                  }
+                  className="relative"
+                >
+                  <Bell className="h-5 w-5" />
+                  {unreadCount > 0 && (
+                    <span className="absolute -right-1 -top-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-brand-purple px-1 text-[10px] font-semibold leading-none text-white">
+                      {unreadCount}
+                    </span>
+                  )}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent
+                align="end"
+                className="w-[min(22rem,calc(100vw-2rem))] overflow-hidden rounded-xl p-0 shadow-lg"
               >
-                <Bell className="h-5 w-5" />
-                {unreadCount > 0 && (
-                  <span className="absolute -right-1 -top-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-brand-purple px-1 text-[10px] font-semibold leading-none text-white">
-                    {unreadCount}
-                  </span>
-                )}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent align="end" className="w-[min(22rem,calc(100vw-2rem))] overflow-hidden rounded-xl p-0 shadow-lg">
-              <div className="flex items-center justify-between border-b px-4 py-3.5">
-                <div>
-                  <p className="text-sm font-semibold">Notificações</p>
-                  <p className="mt-0.5 text-xs text-muted-foreground">
-                    {unreadCount > 0 ? `${unreadCount} não lida${unreadCount > 1 ? "s" : ""}` : "Tudo em dia"}
-                  </p>
-                </div>
-                {unreadCount > 0 && (
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="h-auto gap-1.5 px-2 py-1 text-xs text-primary"
-                    onClick={() => void markAllAsRead()}
-                  >
-                    <CheckCheck className="h-3.5 w-3.5" /> Marcar todas como lidas
-                  </Button>
-                )}
-              </div>
-              <ul className="max-h-[min(24rem,65vh)] divide-y overflow-y-auto">
-                {notifications.length === 0 && <li className="px-4 py-8 text-center text-sm text-muted-foreground">Você ainda não tem notificações.</li>}
-                {notifications.map((n) => (
-                  <li key={n.id}>
-                    <a
-                      href={n.target_path}
-                      onClick={async (event) => {
-                        event.preventDefault();
-                        if (!n.read_at) await markAsRead(n.id);
-                        window.location.assign(n.target_path);
-                      }}
-                      className={`group flex items-start gap-3 px-4 py-3.5 transition-colors hover:bg-muted focus-visible:outline-2 focus-visible:outline-ring ${n.read_at ? "" : "bg-primary-soft/60"}`}
+                <div className="flex items-center justify-between border-b px-4 py-3.5">
+                  <div>
+                    <p className="text-sm font-semibold">Notificações</p>
+                    <p className="mt-0.5 text-xs text-muted-foreground">
+                      {unreadCount > 0
+                        ? `${unreadCount} não lida${unreadCount > 1 ? "s" : ""}`
+                        : "Tudo em dia"}
+                    </p>
+                  </div>
+                  {unreadCount > 0 && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="h-auto gap-1.5 px-2 py-1 text-xs text-primary"
+                      onClick={() => void markAllAsRead()}
                     >
-                      <span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${n.read_at ? "bg-transparent" : "bg-brand-purple"}`} aria-hidden="true" />
-                      <span className="min-w-0 flex-1">
-                        <span className="block text-sm font-medium">{n.title}</span>
-                        <span className="mt-1 block text-xs leading-relaxed text-muted-foreground">{n.body}</span>
-                      </span>
-                      <ArrowUpRight className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100" aria-hidden="true" />
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            </PopoverContent>
-          </Popover>}
+                      <CheckCheck className="h-3.5 w-3.5" /> Marcar todas como lidas
+                    </Button>
+                  )}
+                </div>
+                <ul className="max-h-[min(24rem,65vh)] divide-y overflow-y-auto">
+                  {notifications.length === 0 && (
+                    <li className="px-4 py-8 text-center text-sm text-muted-foreground">
+                      Você ainda não tem notificações.
+                    </li>
+                  )}
+                  {notifications.map((n) => (
+                    <li key={n.id}>
+                      <a
+                        href={n.target_path}
+                        onClick={async (event) => {
+                          event.preventDefault();
+                          if (!n.read_at) await markAsRead(n.id);
+                          window.location.assign(n.target_path);
+                        }}
+                        className={`group flex items-start gap-3 px-4 py-3.5 transition-colors hover:bg-muted focus-visible:outline-2 focus-visible:outline-ring ${n.read_at ? "" : "bg-primary-soft/60"}`}
+                      >
+                        <span
+                          className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${n.read_at ? "bg-transparent" : "bg-brand-purple"}`}
+                          aria-hidden="true"
+                        />
+                        <span className="min-w-0 flex-1">
+                          <span className="block text-sm font-medium">{n.title}</span>
+                          <span className="mt-1 block text-xs leading-relaxed text-muted-foreground">
+                            {n.body}
+                          </span>
+                        </span>
+                        <ArrowUpRight
+                          className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100"
+                          aria-hidden="true"
+                        />
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </PopoverContent>
+            </Popover>
+          )}
           {session ? (
             <>
-              {canPublish && <Button asChild className="hidden sm:inline-flex"><Link to="/publicar"><Plus className="h-4 w-4" /> Publicar vaga</Link></Button>}
-              {isAdmin && (
-                <Button asChild size="sm" className="hidden sm:inline-flex"><Link to="/admin"><ShieldCheck className="h-4 w-4" /> Painel admin</Link></Button>
+              {roleLinks.map((item) => (
+                <Button
+                  key={item.to}
+                  asChild
+                  variant={item.to === "/publicar" || item.to === "/admin" ? "default" : "ghost"}
+                  size="sm"
+                  className="hidden lg:inline-flex"
+                >
+                  <Link to={item.to}>
+                    {item.to === "/publicar" && <Plus className="h-4 w-4" />}
+                    {item.to === "/admin" && <ShieldCheck className="h-4 w-4" />}
+                    {item.label}
+                  </Link>
+                </Button>
+              ))}
+              {session && role && (
+                <Button asChild variant="ghost" size="sm" className="hidden lg:inline-flex">
+                  <Link to="/alertas">Notificações</Link>
+                </Button>
               )}
-              <Button asChild variant="ghost" size="sm" className="hidden sm:inline-flex"><Link to="/candidaturas">Candidaturas</Link></Button>
-              {session && <Button asChild variant="ghost" size="sm" className="hidden min-h-11 md:inline-flex"><Link to="/alertas">{isStudent ? "Alertas" : "Notificações"}</Link></Button>}
-              {isStudent && <Button asChild variant="ghost" size="sm" className="hidden lg:inline-flex"><Link to="/vagas-salvas">Salvas</Link></Button>}
-              {session && <Button asChild variant="ghost" size="sm" className="hidden lg:inline-flex"><Link to="/calendario">Calendário</Link></Button>}
-              <Button asChild variant="outline" size="sm"><Link to="/perfil">Meu perfil</Link></Button>
-              <Button variant="ghost" size="sm" onClick={signOut}>Sair</Button>
+              <Button asChild variant="outline" size="sm">
+                <Link to="/perfil">Meu perfil</Link>
+              </Button>
+              <Button variant="ghost" size="sm" onClick={signOut}>
+                Sair
+              </Button>
             </>
           ) : (
-            <Button asChild variant="outline" size="sm"><Link to="/auth">Entrar</Link></Button>
+            <Button asChild variant="outline" size="sm">
+              <Link to="/auth">Entrar</Link>
+            </Button>
           )}
           <Sheet open={open} onOpenChange={setOpen}>
             <SheetTrigger asChild>
@@ -178,19 +266,32 @@ export function Header() {
                   </Link>
                 ))}
                 <hr className="my-2" />
-                <Link to={session ? "/perfil" : "/auth"} onClick={() => setOpen(false)} className="rounded-md px-3 py-3 font-medium hover:bg-muted">
+                <Link
+                  to={session ? "/perfil" : "/auth"}
+                  onClick={() => setOpen(false)}
+                  className="rounded-md px-3 py-3 font-medium hover:bg-muted"
+                >
                   {session ? "Meu perfil" : "Entrar"}
                 </Link>
-                {session && <Link to="/candidaturas" onClick={() => setOpen(false)} className="rounded-md px-3 py-3 font-medium hover:bg-muted">Candidaturas e conversas</Link>}
-                {session && <Link to="/alertas" onClick={() => setOpen(false)} className="rounded-md px-3 py-3 font-medium hover:bg-muted">{isStudent ? "Alertas e notificações" : "Preferências de notificações"}</Link>}
-                {isStudent && <Link to="/vagas-salvas" onClick={() => setOpen(false)} className="rounded-md px-3 py-3 font-medium hover:bg-muted">Vagas salvas</Link>}
-                {session && <Link to="/calendario" onClick={() => setOpen(false)} className="rounded-md px-3 py-3 font-medium hover:bg-muted">Calendário de carreira</Link>}
-                {isAdmin && (
-                  <Link to="/admin" onClick={() => setOpen(false)} className="rounded-md px-3 py-3 font-medium text-primary hover:bg-muted">
-                    Painel do administrador
+                {roleLinks.map((item) => (
+                  <Link
+                    key={item.to}
+                    to={item.to}
+                    onClick={() => setOpen(false)}
+                    className="rounded-md px-3 py-3 font-medium hover:bg-muted"
+                  >
+                    {item.label}
+                  </Link>
+                ))}
+                {session && role && (
+                  <Link
+                    to="/alertas"
+                    onClick={() => setOpen(false)}
+                    className="rounded-md px-3 py-3 font-medium hover:bg-muted"
+                  >
+                    Preferências de notificações
                   </Link>
                 )}
-                {canPublish && <Button asChild className="mt-2"><Link to="/publicar" onClick={() => setOpen(false)}><Plus className="h-4 w-4" /> Publicar vaga</Link></Button>}
               </nav>
             </SheetContent>
           </Sheet>
