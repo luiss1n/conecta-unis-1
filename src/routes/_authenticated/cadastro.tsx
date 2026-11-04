@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { consumeAuthReturn } from "@/lib/auth-return";
-import { formatBrazilianCnpj, formatBrazilianPhone, isValidBrazilianCnpj } from "@/lib/profile";
+import { formatBrazilianCnpj, formatBrazilianPhone } from "@/lib/profile";
 import { uploadProfileFile } from "@/services/api";
 
 export const Route = createFileRoute("/_authenticated/cadastro")({
@@ -69,29 +69,22 @@ const usernameSchema = z
   );
 
 const base = z.object({
-  display_name: z.string().trim().min(2, "Informe seu nome").max(100),
+  display_name: z.string().trim().min(1, "Informe seu nome").max(100),
   username: usernameSchema,
-  city: z.string().trim().min(2, "Informe a cidade").max(100),
-  phone: z
-    .string()
-    .trim()
-    .regex(/^(?:\(\d{2}\) \d{5}-\d{4})?$/, "Informe o telefone no formato (XX) XXXXX-XXXX."),
+  city: z.string().trim().min(1, "Informe a cidade").max(100),
+  phone: z.string().trim().max(15),
   bio: z.string().trim().max(2000),
 });
 const company = base.extend({
   kind: z.literal("company"),
-  company_name: z.string().trim().min(2, "Informe o nome da empresa").max(120),
-  legal_name: z.string().trim().min(2, "Informe a razão social").max(150),
+  company_name: z.string().trim().min(1, "Informe o nome da empresa").max(120),
+  legal_name: z.string().trim().min(1, "Informe a razão social").max(150),
   cnpj: z
     .string()
-    .transform((v) => v.replace(/\D/g, ""))
-    .refine(isValidBrazilianCnpj, "Informe exatamente 14 números para o CNPJ."),
-  sector: z.string().trim().min(2, "Informe o setor").max(100),
-  website: z
-    .string()
-    .trim()
-    .max(300)
-    .refine((v) => v === "" || /^https?:\/\//.test(v), "Site deve começar com http:// ou https://"),
+    .transform((v) => v.replace(/\D/g, "").slice(0, 14))
+    .refine((v) => v.length === 14, "Informe 14 números no CNPJ."),
+  sector: z.string().trim().min(1, "Informe o setor").max(100),
+  website: z.string().trim().max(300),
 });
 const professor = base.extend({
   kind: z.literal("professor"),
