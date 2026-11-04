@@ -71,6 +71,4 @@ As primeiras telas previstas incluem:
 
 ## Privacidade e segurança
 
-O desenvolvimento deverá considerar a Lei Geral de Proteção de Dados Pessoais (LGPD), incluindo o tratamento adequado dos dados pessoais, o controle de acesso às informações e a transparência sobre o compartilhamento de dados com empresas.
-
-As medidas definitivas de segurança serão implementadas e validadas conforme as funcionalidades forem sendo desenvolvidas.
+O desenvolvimento está a considerar a Lei Geral de Proteção de Dados Pessoais (LGPD), incluindo o tratamento adequado dos dados pessoais, o controle de acesso às informações e a transparência sobre o compartilhamento de dados com empresas.
