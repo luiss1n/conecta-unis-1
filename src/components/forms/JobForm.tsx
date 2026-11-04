@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { DEFAULT_PUBLISHER } from "@/lib/jobs";
@@ -9,14 +9,6 @@ import { useQuery } from "@tanstack/react-query";
 import { getRegionalCities } from "@/services/api";
 
 type Values = NewJobValues & { companySlug: string | null; publisherName: string | null };
-
-function toLocalDateTimeInput(value?: string) {
-  if (!value) return "";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "";
-  const offset = date.getTimezoneOffset() * 60_000;
-  return new Date(date.getTime() - offset).toISOString().slice(0, 16);
-}
 
 interface Props {
   
@@ -52,10 +44,14 @@ export function JobForm({ initial, admin = false, companies = [], submitLabel, s
     requirements: (initial?.requirements ?? []).join("\n"),
     benefits: (initial?.benefits ?? []).join("\n"),
     salary: initial?.salary ?? "",
-    closesAt: toLocalDateTimeInput(initial?.closesAt ?? undefined),
     companySlug: initial?.companySlug ?? "",
     publisherName: initial?.publisherName ?? DEFAULT_PUBLISHER,
   });
+  const availableCities = useMemo(() => {
+    const cities = new Map(regionalCities.map((item) => [item.city, item]));
+    if (form.city && !cities.has(form.city)) cities.set(form.city, { city: form.city, is_sre_caxambu: false, latitude: 0, longitude: 0 });
+    return [...cities.values()].sort((a, b) => a.city.localeCompare(b.city, "pt-BR"));
+  }, [form.city, regionalCities]);
   useEffect(() => {
     if (isEditing || admin) { setDraftReady(true); return; }
     let active = true;
@@ -101,7 +97,6 @@ export function JobForm({ initial, admin = false, companies = [], submitLabel, s
         requirements: lines(form.requirements),
         benefits: lines(form.benefits),
         salary: form.salary || undefined,
-        closesAt: form.closesAt ? new Date(form.closesAt).toISOString() : undefined,
         companySlug: admin && form.companySlug ? form.companySlug : null,
         publisherName: admin && !form.companySlug ? form.publisherName : null,
       });
@@ -165,16 +160,12 @@ export function JobForm({ initial, admin = false, companies = [], submitLabel, s
         <Field label="Cidade">
           <select className={inputCls} value={form.city} onChange={set("city")} required disabled={citiesLoading || !!citiesError}>
             <option value="">{citiesLoading ? "Carregando cidades…" : citiesError ? "Não foi possível carregar cidades" : "Selecione uma cidade"}</option>
-            {form.city && !regionalCities.some(({ city }) => city === form.city) && <option value={form.city}>{form.city}</option>}
-            {regionalCities.map(({ city, is_sre_caxambu }) => <option key={city} value={city}>{city}{is_sre_caxambu ? " · SRE Caxambu" : " · até 20 km"}</option>)}
+            {availableCities.map(({ city, is_sre_caxambu }) => <option key={city} value={city}>{city}{is_sre_caxambu ? " · SRE Caxambu" : " · até 20 km"}</option>)}
           </select>
           {citiesError && <p role="alert" className="text-xs text-destructive">Não foi possível carregar as cidades. Atualize a página e tente de novo.</p>}
         </Field>
         <Field label="Salário / bolsa (opcional)">
           <input className={inputCls} value={form.salary} onChange={set("salary")} maxLength={100} placeholder="Ex.: R$ 1.500" />
-        </Field>
-        <Field label="Data limite para candidatura (opcional)">
-          <input className={inputCls} type="datetime-local" value={form.closesAt} onChange={set("closesAt")} min={!isEditing ? toLocalDateTimeInput(new Date(Date.now() + 60_000).toISOString()) : undefined} />
         </Field>
       </div>
       <Field label="Resumo">

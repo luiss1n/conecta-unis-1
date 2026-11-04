@@ -170,7 +170,7 @@ function toJob(r: JobRow, company?: Company): Job {
 }
 
 export function isJobAvailable(job: Job): boolean {
-  return !job.isHidden && job.status === "open" && (!job.closesAt || Date.parse(job.closesAt) > Date.now());
+  return !job.isHidden && job.status === "open";
 }
 
 function toEvent(r: EventRow): CareerEvent {
@@ -524,7 +524,6 @@ export interface NewJobValues {
   requirements: string[];
   benefits: string[];
   salary?: string | undefined;
-  closesAt?: string | undefined;
 }
 
 function jobPayload(values: NewJobValues) {
@@ -541,7 +540,6 @@ function jobPayload(values: NewJobValues) {
     requirements: values.requirements,
     benefits: values.benefits,
     salary: values.salary?.trim() || null,
-    closes_at: values.closesAt || null,
   };
 }
 
