@@ -20,6 +20,9 @@ import { Route as AuthenticatedCadastroRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedCandidateProfileRouteImport } from './routes/_authenticated/perfil-do-candidato.$applicationId'
 import { Route as AuthenticatedPerfilRouteImport } from './routes/_authenticated/perfil'
 import { Route as AuthenticatedPublicarRouteImport } from './routes/_authenticated/publicar'
+import { Route as AuthenticatedAlertasRouteImport } from './routes/_authenticated/alertas'
+import { Route as AuthenticatedCalendarioRouteImport } from './routes/_authenticated/calendario'
+import { Route as AuthenticatedVagasSalvasRouteImport } from './routes/_authenticated/vagas-salvas'
 import { Route as EmpresasIndexRouteImport } from './routes/empresas.index'
 import { Route as EmpresasSlugRouteImport } from './routes/empresas.$slug'
 import { Route as EventosIndexRouteImport } from './routes/eventos.index'
@@ -81,6 +84,9 @@ const AuthenticatedPublicarRoute = AuthenticatedPublicarRouteImport.update({
   path: '/publicar',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedAlertasRoute = AuthenticatedAlertasRouteImport.update({ id: '/alertas', path: '/alertas', getParentRoute: () => AuthenticatedRouteRoute } as any)
+const AuthenticatedCalendarioRoute = AuthenticatedCalendarioRouteImport.update({ id: '/calendario', path: '/calendario', getParentRoute: () => AuthenticatedRouteRoute } as any)
+const AuthenticatedVagasSalvasRoute = AuthenticatedVagasSalvasRouteImport.update({ id: '/vagas-salvas', path: '/vagas-salvas', getParentRoute: () => AuthenticatedRouteRoute } as any)
 const EmpresasIndexRoute = EmpresasIndexRouteImport.update({
   id: '/empresas/',
   path: '/empresas/',
@@ -123,6 +129,9 @@ export interface FileRoutesByFullPath {
   '/perfil-do-candidato/$applicationId': typeof AuthenticatedCandidateProfileRoute
   '/perfil': typeof AuthenticatedPerfilRoute
   '/publicar': typeof AuthenticatedPublicarRoute
+  '/alertas': typeof AuthenticatedAlertasRoute
+  '/calendario': typeof AuthenticatedCalendarioRoute
+  '/vagas-salvas': typeof AuthenticatedVagasSalvasRoute
   '/empresas/$slug': typeof EmpresasSlugRoute
   '/eventos/$id': typeof EventosIdRoute
   '/vagas/$slug': typeof VagasSlugRoute
@@ -141,6 +150,9 @@ export interface FileRoutesByTo {
   '/perfil-do-candidato/$applicationId': typeof AuthenticatedCandidateProfileRoute
   '/perfil': typeof AuthenticatedPerfilRoute
   '/publicar': typeof AuthenticatedPublicarRoute
+  '/alertas': typeof AuthenticatedAlertasRoute
+  '/calendario': typeof AuthenticatedCalendarioRoute
+  '/vagas-salvas': typeof AuthenticatedVagasSalvasRoute
   '/empresas/$slug': typeof EmpresasSlugRoute
   '/eventos/$id': typeof EventosIdRoute
   '/vagas/$slug': typeof VagasSlugRoute
@@ -161,6 +173,9 @@ export interface FileRoutesById {
   '/_authenticated/perfil-do-candidato/$applicationId': typeof AuthenticatedCandidateProfileRoute
   '/_authenticated/perfil': typeof AuthenticatedPerfilRoute
   '/_authenticated/publicar': typeof AuthenticatedPublicarRoute
+  '/_authenticated/alertas': typeof AuthenticatedAlertasRoute
+  '/_authenticated/calendario': typeof AuthenticatedCalendarioRoute
+  '/_authenticated/vagas-salvas': typeof AuthenticatedVagasSalvasRoute
   '/empresas/$slug': typeof EmpresasSlugRoute
   '/eventos/$id': typeof EventosIdRoute
   '/vagas/$slug': typeof VagasSlugRoute
@@ -181,6 +196,9 @@ export interface FileRouteTypes {
     | '/perfil-do-candidato/$applicationId'
     | '/perfil'
     | '/publicar'
+    | '/alertas'
+    | '/calendario'
+    | '/vagas-salvas'
     | '/empresas/$slug'
     | '/eventos/$id'
     | '/vagas/$slug'
@@ -199,6 +217,9 @@ export interface FileRouteTypes {
     | '/perfil-do-candidato/$applicationId'
     | '/perfil'
     | '/publicar'
+    | '/alertas'
+    | '/calendario'
+    | '/vagas-salvas'
     | '/empresas/$slug'
     | '/eventos/$id'
     | '/vagas/$slug'
@@ -218,6 +239,9 @@ export interface FileRouteTypes {
     | '/_authenticated/perfil-do-candidato/$applicationId'
     | '/_authenticated/perfil'
     | '/_authenticated/publicar'
+    | '/_authenticated/alertas'
+    | '/_authenticated/calendario'
+    | '/_authenticated/vagas-salvas'
     | '/empresas/$slug'
     | '/eventos/$id'
     | '/vagas/$slug'
@@ -371,6 +395,9 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedCandidateProfileRoute: typeof AuthenticatedCandidateProfileRoute
   AuthenticatedPerfilRoute: typeof AuthenticatedPerfilRoute
   AuthenticatedPublicarRoute: typeof AuthenticatedPublicarRoute
+  AuthenticatedAlertasRoute: typeof AuthenticatedAlertasRoute
+  AuthenticatedCalendarioRoute: typeof AuthenticatedCalendarioRoute
+  AuthenticatedVagasSalvasRoute: typeof AuthenticatedVagasSalvasRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
@@ -378,6 +405,9 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedCandidateProfileRoute: AuthenticatedCandidateProfileRoute,
   AuthenticatedPerfilRoute: AuthenticatedPerfilRoute,
   AuthenticatedPublicarRoute: AuthenticatedPublicarRoute,
+  AuthenticatedAlertasRoute: AuthenticatedAlertasRoute,
+  AuthenticatedCalendarioRoute: AuthenticatedCalendarioRoute,
+  AuthenticatedVagasSalvasRoute: AuthenticatedVagasSalvasRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
