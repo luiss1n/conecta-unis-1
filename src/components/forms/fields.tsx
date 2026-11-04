@@ -5,7 +5,7 @@ export const inputCls =
 export const areaCls =
   "mt-1 w-full rounded-md border bg-surface px-3 py-2 outline-none focus:border-primary focus:ring-4 focus:ring-primary/10";
 
-/** O <label> envolve o campo, então leitores de tela associam rótulo e controle sem precisar de ids. */
+
 export function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
     <label className="block">

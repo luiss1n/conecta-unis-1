@@ -1,4 +1,3 @@
--- Dados reais da plataforma e notificações persistidas por usuário.
 CREATE TABLE IF NOT EXISTS public.notifications (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   recipient_id uuid NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
@@ -101,8 +100,6 @@ RETURNS jsonb LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $
 $$;
 REVOKE ALL ON FUNCTION public.get_platform_stats() FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.get_platform_stats() TO anon, authenticated;
-
--- Regras de username e telefone também valem quando os dados são enviados direto à API.
 CREATE OR REPLACE FUNCTION public.normalize_profile_username()
 RETURNS trigger LANGUAGE plpgsql SET search_path = public AS $$
 BEGIN

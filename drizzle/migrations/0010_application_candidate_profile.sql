@@ -1,4 +1,3 @@
--- Permite que participantes da candidatura consultem apenas o perfil profissional do candidato.
 CREATE OR REPLACE FUNCTION public.get_application_candidate_profile(_application_id uuid)
 RETURNS jsonb
 LANGUAGE plpgsql
@@ -40,9 +39,6 @@ END;
 $$;
 REVOKE ALL ON FUNCTION public.get_application_candidate_profile(uuid) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.get_application_candidate_profile(uuid) TO authenticated;
-
--- Imagens de avatar ficam no mesmo bucket privado; a policy só libera os objetos avatar-*
--- do candidato relacionado a uma candidatura em que o usuário atual participa.
 DROP POLICY IF EXISTS candidate_avatars_read_by_application_participants ON storage.objects;
 CREATE POLICY candidate_avatars_read_by_application_participants
 ON storage.objects FOR SELECT TO authenticated

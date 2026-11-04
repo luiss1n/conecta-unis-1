@@ -1,5 +1,3 @@
--- Atribui aluno/professor apenas a partir de e-mail institucional confirmado.
--- Diretor/admin não é concedido por domínio; precisa ser promovido por operador confiável.
 CREATE OR REPLACE FUNCTION public.assign_institutional_role()
 RETURNS trigger
 LANGUAGE plpgsql
@@ -9,7 +7,6 @@ AS $$
 DECLARE
   account_email text := lower(coalesce(NEW.email, ''));
 BEGIN
-  -- Retire imediatamente permissões de professor se o e-mail institucional for removido.
   IF account_email !~ '^[^@]+@professor\.unis\.edu\.br$' THEN
     UPDATE public.user_roles SET role = 'visitor'
     WHERE user_id = NEW.id AND role = 'professor';
@@ -45,9 +42,6 @@ DROP TRIGGER IF EXISTS assign_institutional_role_on_confirmation ON auth.users;
 CREATE TRIGGER assign_institutional_role_on_confirmation
   AFTER UPDATE OF email, email_confirmed_at ON auth.users
   FOR EACH ROW EXECUTE FUNCTION public.assign_institutional_role();
-
--- Existing verified institutional accounts receive their role; unverified professor
--- accounts lose publishing privileges until they use the confirmed institutional domain.
 UPDATE public.user_roles r
 SET role = 'visitor'
 FROM auth.users u
@@ -68,8 +62,6 @@ WHERE email_confirmed_at IS NOT NULL
   AND lower(coalesce(email, '')) ~ '^[^@]+@professor\.unis\.edu\.br$'
 ON CONFLICT (user_id) DO UPDATE SET role = EXCLUDED.role
 WHERE public.user_roles.role <> 'admin';
-
--- Prevent self-service promotion to professor/admin through save_registration or SQL.
 CREATE OR REPLACE FUNCTION public.guard_self_service_role_assignment()
 RETURNS trigger
 LANGUAGE plpgsql

@@ -19,9 +19,9 @@ function toLocalDateTimeInput(value?: string) {
 }
 
 interface Props {
-  /** Vaga existente (edição). Sem isso, o formulário cria uma nova. */
+  
   initial?: Job | undefined;
-  /** Modo administrador: permite escolher a empresa ou publicar com um nome livre. */
+  
   admin?: boolean;
   companies?: Company[];
   submitLabel: string;

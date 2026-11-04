@@ -1,20 +1,20 @@
 import { motion, useReducedMotion, type Variants } from "framer-motion";
 import type { ReactNode } from "react";
 
-/* -------------------------------------------------------------------------- */
-/*  <FadeUp>: conteúdo aparece de baixo para cima ao entrar na tela            */
-/*  - inicial: opacity 0, y 30px                                               */
-/*  - ao entrar no viewport: opacity 1, y 0 (dispara uma vez só)               */
-/*  - duração 0.6s com easeOut                                                 */
-/*  - prefers-reduced-motion: apenas fade simples, sem deslocamento            */
-/* -------------------------------------------------------------------------- */
+
+
+
+
+
+
+
 export function FadeUp({
   children,
   delay = 0,
   className,
 }: {
   children: ReactNode;
-  /** atraso em segundos */
+  
   delay?: number;
   className?: string;
 }) {
@@ -33,9 +33,9 @@ export function FadeUp({
   );
 }
 
-/* -------------------------------------------------------------------------- */
-/*  <Stagger> + <StaggerItem>: cards surgem em cascata (0.1s entre itens)      */
-/* -------------------------------------------------------------------------- */
+
+
+
 const containerVariants: Variants = {
   hidden: {},
   visible: {

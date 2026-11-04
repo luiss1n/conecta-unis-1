@@ -1,4 +1,3 @@
--- Normaliza e valida usernames também quando a alteração vem diretamente pela API.
 CREATE OR REPLACE FUNCTION public.normalize_profile_username()
 RETURNS trigger
 LANGUAGE plpgsql
@@ -26,8 +25,6 @@ DROP TRIGGER IF EXISTS profiles_normalize_username ON public.profiles;
 CREATE TRIGGER profiles_normalize_username
 BEFORE INSERT OR UPDATE OF username ON public.profiles
 FOR EACH ROW EXECUTE FUNCTION public.normalize_profile_username();
-
--- Mantém a mesma validação no fluxo de cadastro que grava o perfil por RPC.
 CREATE OR REPLACE FUNCTION public.save_registration(payload jsonb)
 RETURNS void
 LANGUAGE plpgsql

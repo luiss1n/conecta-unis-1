@@ -6,7 +6,7 @@ import type { CareerEvent } from "@/types";
 import { Field, areaCls, inputCls } from "./fields";
 
 interface Props {
-  /** Evento existente (edição). Sem isso, o formulário cria um novo. */
+  
   initial?: CareerEvent | undefined;
   submitLabel: string;
   savingLabel?: string;
@@ -16,7 +16,7 @@ interface Props {
   onCancel?: () => void;
 }
 
-/** ISO (UTC) → valor de <input type="datetime-local"> no fuso do navegador. */
+
 function toLocalInput(iso: string) {
   const d = new Date(iso);
   const pad = (n: number) => String(n).padStart(2, "0");

@@ -34,14 +34,12 @@ describe("jobPublisher", () => {
 
 describe("formatação de datas (fuso de Brasília)", () => {
   it("mostra o horário local de um timestamptz do banco", () => {
-    // 17:00 UTC = 14:00 em Brasília (UTC-3)
     const d = formatEventDate("2026-11-05T17:00:00+00:00");
     expect(d.time).toBe("14:00");
     expect(d.day).toBe("05");
     expect(d.month).toBe("nov");
   });
   it("não vira o dia para vagas publicadas à noite", () => {
-    // 01:30 UTC de 06/11 ainda é 05/11 em Brasília
     expect(formatDate("2026-11-06T01:30:00+00:00")).toContain("05");
   });
 });

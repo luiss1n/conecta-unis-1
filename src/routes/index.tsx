@@ -33,7 +33,7 @@ export const Route = createFileRoute("/")({
 
 const PAGE = 6;
 
-/** atraso da animação de entrada do herói */
+
 const heroDelay = (ms: number) => ({ "--hero-delay": `${ms}ms` }) as CSSProperties;
 
 function Home() {
@@ -73,7 +73,7 @@ function Home() {
           decoding="async"
           className="hero-bg-in pointer-events-none absolute inset-0 h-full w-full object-cover"
         />
-        {/* Escurece o lado do texto para manter a leitura (contraste acima de 7:1). */}
+        {}
         <div
           aria-hidden="true"
           className="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,rgb(15_23_42/0.88),rgb(15_23_42/0.55)_60%,rgb(15_23_42/0.35))] sm:bg-[linear-gradient(90deg,rgb(15_23_42/0.85),rgb(15_23_42/0.45)_55%,rgb(15_23_42/0.1))]"

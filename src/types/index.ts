@@ -1,5 +1,3 @@
-// Tipos de domínio do CONECTA UNIS.
-// Estes tipos espelham as tabelas do Supabase (PostgreSQL) já mapeadas em src/services/api.ts.
 
 export type JobType = "estagio" | "emprego";
 export type WorkMode = "presencial" | "hibrido" | "remoto";
@@ -16,11 +14,11 @@ export type JobCategory =
 export interface Job {
   slug: string;
   title: string;
-  /** null quando a vaga foi publicada pelo administrador sem empresa cadastrada. */
+  
   companySlug: string | null;
-  /** Nome do publicador quando não há empresa (ex.: Núcleo de Carreira). */
+  
   publisherName?: string | null | undefined;
-  /** Empresa resolvida pelo serviço (não vem da tabela jobs). */
+  
   company?: Company | undefined;
   type: JobType;
   mode: WorkMode;

@@ -1,4 +1,3 @@
--- Bloqueia escritas diretas em publicações ocultas, além de escondê-las nas consultas públicas.
 
 CREATE OR REPLACE FUNCTION public.require_open_job_for_application()
 RETURNS trigger

@@ -1,4 +1,3 @@
--- Grava rascunhos somente quando a alteração é mais recente que a já salva.
 CREATE OR REPLACE FUNCTION public.save_publication_draft(_kind text, _payload jsonb, _updated_at timestamptz)
 RETURNS void
 LANGUAGE plpgsql

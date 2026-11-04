@@ -139,8 +139,6 @@ BEGIN
 END; $$;
 DROP TRIGGER IF EXISTS event_interests_notify_owner ON public.event_interests;
 CREATE TRIGGER event_interests_notify_owner AFTER INSERT ON public.event_interests FOR EACH ROW EXECUTE FUNCTION public.notify_event_registration();
-
--- Estas funções são chamadas apenas por triggers, nunca diretamente por clientes.
 REVOKE ALL ON FUNCTION public.notify_platform_post() FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.notify_new_application() FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.notify_application_message() FROM PUBLIC, anon, authenticated;

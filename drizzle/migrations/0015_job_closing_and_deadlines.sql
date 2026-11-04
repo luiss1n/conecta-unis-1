@@ -1,4 +1,3 @@
--- Permite encerrar vagas manualmente e definir um prazo de candidatura.
 ALTER TABLE public.jobs
   ADD COLUMN IF NOT EXISTS status text NOT NULL DEFAULT 'open',
   ADD COLUMN IF NOT EXISTS closes_at timestamptz;
@@ -18,8 +17,6 @@ $$;
 
 CREATE INDEX IF NOT EXISTS jobs_public_availability_idx
   ON public.jobs (status, closes_at, "publishedAt" DESC);
-
--- O banco bloqueia candidaturas mesmo se alguém tentar chamar a API diretamente.
 CREATE OR REPLACE FUNCTION public.require_open_job_for_application()
 RETURNS trigger
 LANGUAGE plpgsql
@@ -44,8 +41,6 @@ DROP TRIGGER IF EXISTS job_applications_require_open_job ON public.job_applicati
 CREATE TRIGGER job_applications_require_open_job
   BEFORE INSERT ON public.job_applications
   FOR EACH ROW EXECUTE FUNCTION public.require_open_job_for_application();
-
--- Mantém a entrega de alertas por perfil/cidade e não avisa sobre vaga encerrada ou vencida.
 CREATE OR REPLACE FUNCTION public.notify_matching_student_job_alerts()
 RETURNS trigger
 LANGUAGE plpgsql

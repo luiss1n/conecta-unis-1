@@ -1,7 +1,4 @@
 import type { Job } from "@/types";
-
-// DADOS DEMONSTRATIVOS — vagas fictícias para apresentação da plataforma.
-// Fixture usada apenas pelos testes (a aplicação lê as vagas do Supabase).
 export const jobs: Job[] = [
   {
     slug: "estagio-desenvolvimento-front-end",

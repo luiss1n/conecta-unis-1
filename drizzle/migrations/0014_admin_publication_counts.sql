@@ -1,4 +1,3 @@
--- Retorna totais agregados sem expor dados pessoais das candidaturas.
 CREATE OR REPLACE FUNCTION public.get_admin_publication_counts()
 RETURNS jsonb
 LANGUAGE plpgsql

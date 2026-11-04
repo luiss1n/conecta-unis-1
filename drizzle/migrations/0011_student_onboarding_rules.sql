@@ -1,4 +1,3 @@
--- Regras consistentes de nome e username e proteção de conclusão do perfil de aluno.
 CREATE OR REPLACE FUNCTION public.normalize_profile_username()
 RETURNS trigger
 LANGUAGE plpgsql

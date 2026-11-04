@@ -1,10 +1,4 @@
-/**
- * Camada de serviços do CONECTA UNIS.
- *
- * Vagas, empresas e eventos são lidos do Supabase (tabelas públicas, protegidas por RLS).
- * A interface consome apenas estas funções; as regras de quem pode escrever ficam nas policies do banco
- * (ver drizzle/migrations).
- */
+
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
 import { profileSchema, validateProfileFile, type ProfileValues, type ProfileFileKind } from "@/lib/profile";
@@ -206,7 +200,7 @@ export async function getCompany(slug: string): Promise<Company | undefined> {
   return data ? toCompany(data) : undefined;
 }
 
-/** Todas as vagas, da mais recente para a mais antiga, já com a empresa resolvida. */
+
 export async function getJobs(options: { includeClosed?: boolean } = {}): Promise<Job[]> {
   const [jobsRes, companies] = await Promise.all([
     supabase.from("jobs").select("*").order("publishedAt", { ascending: false }),
@@ -276,7 +270,7 @@ export async function getJobsByCompany(slug: string): Promise<Job[]> {
   return (data ?? []).map((r) => toJob(r, company)).filter(isJobAvailable);
 }
 
-/** Eventos em ordem cronológica. Com `upcomingOnly`, só os que ainda não aconteceram. */
+
 export async function getEvents(opts: { upcomingOnly?: boolean } = {}): Promise<CareerEvent[]> {
   let q = supabase.from("events").select("*").order("date", { ascending: true });
   if (opts.upcomingOnly) q = q.gte("date", new Date().toISOString());
@@ -412,7 +406,7 @@ export async function getApplicationResumeUrl(application: JobApplication): Prom
   return data.signedUrl;
 }
 
-/** Papel da conta logada (null se deslogado ou sem cadastro). Usado para exibir o menu de admin. */
+
 export async function getMyRole() {
   const { data: u } = await supabase.auth.getUser();
   if (!u.user) return null;
@@ -474,7 +468,6 @@ export async function saveMyProfile(values: ProfileValues) {
 export async function uploadProfileFile(file: File, kind: ProfileFileKind) {
   validateProfileFile(file, kind);
   const user = await requireUser();
-  // Check actual bytes as well as the browser-provided content type.
   const bytes = new Uint8Array(await file.slice(0, 12).arrayBuffer());
   const pdf = new TextDecoder().decode(bytes.slice(0, 5)) === "%PDF-";
   const png = bytes[0] === 137 && bytes[1] === 80 && bytes[2] === 78 && bytes[3] === 71;
@@ -586,18 +579,13 @@ export async function createEvent(values: NewEventValues) {
   if (error) throw new Error("Não foi possível publicar o evento. Verifique os dados e tente novamente.");
 }
 
-// ---------------------------------------------------------------------------------------------
-// Administração. A autorização real está nas policies `jobs_admin_all` / `events_admin_all`
-// (migração 0004); estas funções só montam as consultas e traduzem os erros.
-// ---------------------------------------------------------------------------------------------
-
 export interface AdminJobValues extends NewJobValues {
-  /** Empresa cadastrada (opcional). Sem empresa, `publisherName` é obrigatório. */
+  
   companySlug: string | null;
   publisherName: string | null;
 }
 
-/** Cria (sem `slug`) ou atualiza (com `slug`) uma vaga como administrador. */
+
 export async function saveJobAsAdmin(values: AdminJobValues, slug?: string) {
   const user = await requireUser();
   const publisher = values.companySlug ? null : values.publisherName?.trim() || null;
@@ -617,7 +605,7 @@ export async function deleteJob(slug: string) {
   if (error || !data?.length) throw new Error("Não foi possível excluir a vaga.");
 }
 
-/** Cria (sem `id`) ou atualiza (com `id`) um evento como administrador. */
+
 export async function saveEventAsAdmin(values: NewEventValues, id?: string) {
   const user = await requireUser();
   if (id) {

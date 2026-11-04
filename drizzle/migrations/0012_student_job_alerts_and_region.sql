@@ -1,4 +1,3 @@
--- Catálogo das cidades da SRE Caxambu e municípios próximos.
 CREATE TABLE IF NOT EXISTS public.regional_cities (
   ibge_code text UNIQUE,
   city text PRIMARY KEY,
@@ -69,8 +68,6 @@ CREATE TABLE IF NOT EXISTS public.job_alert_deliveries (
 ALTER TABLE public.job_alert_deliveries ENABLE ROW LEVEL SECURITY;
 REVOKE ALL ON public.job_alert_deliveries FROM PUBLIC, anon, authenticated;
 GRANT ALL ON public.job_alert_deliveries TO service_role;
-
--- Vagas salvas pelo aluno para consultar depois.
 CREATE TABLE IF NOT EXISTS public.saved_jobs (
   user_id uuid NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
   job_slug text NOT NULL REFERENCES public.jobs(slug) ON DELETE CASCADE,
@@ -84,8 +81,6 @@ DROP POLICY IF EXISTS saved_jobs_own ON public.saved_jobs;
 CREATE POLICY saved_jobs_own ON public.saved_jobs FOR ALL TO authenticated
   USING (user_id = auth.uid() AND public.has_role(auth.uid(), 'visitor'))
   WITH CHECK (user_id = auth.uid() AND public.has_role(auth.uid(), 'visitor'));
-
--- Rascunhos privados, sincronizados por conta e separados por tipo de formulário.
 CREATE TABLE IF NOT EXISTS public.publication_drafts (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id uuid NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,

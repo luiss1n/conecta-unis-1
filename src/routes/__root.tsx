@@ -144,7 +144,7 @@ function RootComponent() {
             <ScrollProgress />
             <Header />
             <main id="conteudo" className="flex-1">
-              {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
+              {}
               <Outlet />
             </main>
             <Footer />

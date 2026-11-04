@@ -7,9 +7,9 @@ import {
   type ReactNode,
 } from "react";
 
-/* -------------------------------------------------------------------------- */
-/*  useInView: detecta quando o elemento entra na tela (IntersectionObserver)  */
-/* -------------------------------------------------------------------------- */
+
+
+
 export function useInView<T extends Element = HTMLElement>({
   threshold = 0.15,
   rootMargin = "0px 0px -8% 0px",
@@ -21,8 +21,6 @@ export function useInView<T extends Element = HTMLElement>({
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
-
-    // Navegadores sem suporte: mostra tudo de uma vez
     if (typeof IntersectionObserver === "undefined") {
       setInView(true);
       return;
@@ -47,19 +45,19 @@ export function useInView<T extends Element = HTMLElement>({
   return { ref, inView };
 }
 
-/* -------------------------------------------------------------------------- */
-/*  <Reveal>: faz o conteúdo aparecer suavemente ao rolar a página             */
-/* -------------------------------------------------------------------------- */
+
+
+
 export type RevealVariant = "up" | "down" | "left" | "right" | "scale" | "fade";
 
 type RevealProps = {
   children: ReactNode;
   variant?: RevealVariant;
-  /** atraso em ms (use para escalonar itens de uma lista) */
+  
   delay?: number;
-  /** duração em ms */
+  
   duration?: number;
-  /** tag HTML a renderizar (div, section, li, h2...) */
+  
   as?: ElementType;
   className?: string;
   style?: CSSProperties;
@@ -98,9 +96,9 @@ export function Reveal({
   );
 }
 
-/* -------------------------------------------------------------------------- */
-/*  <RevealList>: aplica atraso progressivo (stagger) em cada filho            */
-/* -------------------------------------------------------------------------- */
+
+
+
 export function RevealList({
   items,
   render,
@@ -125,9 +123,9 @@ export function RevealList({
   );
 }
 
-/* -------------------------------------------------------------------------- */
-/*  <CountUp>: número que "sobe" até o valor final (ótimo p/ estatísticas)     */
-/* -------------------------------------------------------------------------- */
+
+
+
 export function CountUp({
   to,
   duration = 1600,
@@ -177,9 +175,9 @@ export function CountUp({
   );
 }
 
-/* -------------------------------------------------------------------------- */
-/*  <ScrollProgress>: barra fina no topo mostrando o quanto da página rolou    */
-/* -------------------------------------------------------------------------- */
+
+
+
 export function ScrollProgress() {
   const barRef = useRef<HTMLDivElement | null>(null);
 

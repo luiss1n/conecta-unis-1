@@ -1,21 +1,11 @@
--- Painel de administração: o admin publica e gerencia vagas/eventos sem ser empresa ou professor.
--- Requer a migração 0003 (valor 'admin' no enum app_role) já aplicada.
-
--- 1) Bucket privado dos arquivos de perfil (a 0002 criou só as policies; o bucket não era criado em lugar nenhum).
 INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 VALUES ('profile-photos', 'profile-photos', false, 2097152, ARRAY['image/jpeg','image/png','image/webp','application/pdf'])
 ON CONFLICT (id) DO NOTHING;
-
--- 2) Vagas podem ser publicadas sem empresa cadastrada (nome do publicador em texto livre).
 ALTER TABLE public.jobs ALTER COLUMN "companySlug" DROP NOT NULL;
 ALTER TABLE public.jobs ADD COLUMN publisher_name text CHECK (publisher_name IS NULL OR char_length(publisher_name) BETWEEN 2 AND 150);
 ALTER TABLE public.jobs ADD CONSTRAINT jobs_has_publisher CHECK ("companySlug" IS NOT NULL OR publisher_name IS NOT NULL);
-
--- 3) O admin pode criar, editar e excluir qualquer vaga/evento. As demais policies continuam valendo.
 CREATE POLICY jobs_admin_all ON public.jobs FOR ALL TO authenticated USING (public.has_role(auth.uid(), 'admin')) WITH CHECK (public.has_role(auth.uid(), 'admin'));
 CREATE POLICY events_admin_all ON public.events FOR ALL TO authenticated USING (public.has_role(auth.uid(), 'admin')) WITH CHECK (public.has_role(auth.uid(), 'admin'));
-
--- 4) SEGURANÇA: ninguém pode virar admin pelo cadastro. Sem isso, kind='admin' no payload seria aceito pelo cast do enum.
 CREATE OR REPLACE FUNCTION public.save_registration(payload jsonb) RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
 DECLARE uid uuid := auth.uid(); chosen public.app_role; existing public.app_role;
 BEGIN

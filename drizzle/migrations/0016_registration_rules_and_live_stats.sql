@@ -1,4 +1,3 @@
--- Mantém as regras de cadastro iguais na interface, nas gravações diretas e no RPC.
 CREATE OR REPLACE FUNCTION public.normalize_profile_username()
 RETURNS trigger
 LANGUAGE plpgsql
@@ -106,8 +105,6 @@ END;
 $$;
 REVOKE ALL ON FUNCTION public.save_registration(jsonb) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.save_registration(jsonb) TO authenticated;
-
--- Exibe contagens reais e consistentes com conteúdo atualmente publicado.
 CREATE OR REPLACE FUNCTION public.get_platform_stats()
 RETURNS jsonb
 LANGUAGE sql

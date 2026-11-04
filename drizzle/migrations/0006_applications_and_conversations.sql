@@ -1,4 +1,3 @@
--- Candidaturas reais, inscricoes em eventos e conversas privadas entre candidato e anunciante.
 
 CREATE TABLE public.job_applications (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -56,9 +55,6 @@ CREATE POLICY application_messages_participant_send ON public.application_messag
       WHERE a.id = application_id AND a.status NOT IN ('closed','withdrawn')
     )
   );
-
--- The candidate explicitly consents in the UI; the function snapshots only the fields
--- shown to the publisher and never exposes the private profile row to that publisher.
 CREATE OR REPLACE FUNCTION public.submit_job_application(
   _job_slug text,
   _consent boolean,
@@ -135,8 +131,6 @@ END;
 $$;
 REVOKE ALL ON FUNCTION public.update_job_application_status(uuid, text) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.update_job_application_status(uuid, text) TO authenticated;
-
--- Permit a publisher to fetch only the exact resume shared in a related application.
 CREATE POLICY profile_files_read_shared_resume ON storage.objects
   FOR SELECT TO authenticated
   USING (
@@ -151,8 +145,6 @@ CREATE POLICY profile_files_read_shared_resume ON storage.objects
       )
     )
   );
-
--- Professors may publish opportunities under their academic profile, without a company record.
 ALTER TABLE public.jobs ALTER COLUMN "companySlug" DROP NOT NULL;
 CREATE POLICY jobs_professor_insert_own ON public.jobs
   FOR INSERT TO authenticated
@@ -169,9 +161,6 @@ CREATE POLICY jobs_professor_update_own ON public.jobs
 CREATE POLICY jobs_professor_delete_own ON public.jobs
   FOR DELETE TO authenticated
   USING (owner_id = auth.uid() AND public.has_role(auth.uid(), 'professor'));
-
--- Event signups are persistent and limited to applicant accounts. Organizers can see
--- only registrations for their own events; registrants retain their own list.
 DROP POLICY IF EXISTS interest_insert ON public.event_interests;
 CREATE POLICY interest_insert ON public.event_interests
   FOR INSERT TO authenticated
