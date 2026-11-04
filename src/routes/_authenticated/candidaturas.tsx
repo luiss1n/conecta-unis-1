@@ -1,10 +1,11 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { BriefcaseBusiness, CalendarDays, MessageCircle, UserRound } from "lucide-react";
 import type { ReactNode } from "react";
 import { PageHeader } from "@/components/common/PageHeader";
 import { Button } from "@/components/ui/button";
-import { getMyApplications, getMyEventRegistrations, getMyRole, getReceivedApplications, type ApplicationListItem } from "@/services/api";
+import { closeJob, getMyAlertPreferences, getMyApplications, getMyEventRegistrations, getMyProfile, getMyPublishedJobs, getMyRole, getMySavedJobSlugs, getReceivedApplications, type ApplicationListItem } from "@/services/api";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/candidaturas")({
   head: () => ({ meta: [
@@ -23,6 +24,7 @@ const statusLabel: Record<string, string> = {
 };
 
 function ApplicationsInbox() {
+  const qc = useQueryClient();
   const roleQuery = useQuery({ queryKey: ["my-role"], queryFn: getMyRole });
   const role = roleQuery.data;
   const canApply = role === "visitor" || role === "professor";
@@ -30,6 +32,25 @@ function ApplicationsInbox() {
   const received = useQuery({ queryKey: ["received-applications"], queryFn: getReceivedApplications, enabled: canReceive, refetchInterval: 10000 });
   const sent = useQuery({ queryKey: ["my-applications"], queryFn: getMyApplications, enabled: canApply, refetchInterval: 10000 });
   const events = useQuery({ queryKey: ["my-event-registrations"], queryFn: getMyEventRegistrations, enabled: canApply });
+  const studentProfile = useQuery({ queryKey: ["my-profile"], queryFn: getMyProfile, enabled: role === "visitor" });
+  const alertPreferences = useQuery({ queryKey: ["my-job-alert-preferences"], queryFn: getMyAlertPreferences, enabled: role === "visitor" });
+  const savedJobs = useQuery({ queryKey: ["my-saved-job-slugs"], queryFn: getMySavedJobSlugs, enabled: role === "visitor" });
+  const publishedJobs = useQuery({ queryKey: ["my-published-jobs"], queryFn: getMyPublishedJobs, enabled: role === "company" || role === "professor" });
+
+  async function finishJob(slug: string) {
+    try { await closeJob(slug); await qc.invalidateQueries({ queryKey: ["my-published-jobs"] }); toast.success("Vaga encerrada."); }
+    catch (error) { toast.error(error instanceof Error ? error.message : "Não foi possível encerrar a vaga."); }
+  }
+
+  const nextStep: { title: string; detail: string; to: "/perfil" | "/alertas" | "/vagas" | "/calendario"; label: string } = !studentProfile.data?.profile.resume_path
+    ? { title: "Adicione seu currículo", detail: "Seu currículo ajuda as empresas a conhecer sua experiência. Você pode atualizar o arquivo quando quiser.", to: "/perfil", label: "Adicionar currículo" }
+    : !alertPreferences.data?.enabled
+      ? { title: "Ative alertas de vagas", detail: "Receba notificações quando surgir uma oportunidade alinhada às suas áreas e cidades escolhidas.", to: "/alertas", label: "Configurar alertas" }
+      : (sent.data?.length ?? 0) === 0
+        ? { title: "Encontre uma oportunidade", detail: "Explore as vagas da região e envie sua primeira candidatura pelo perfil.", to: "/vagas", label: "Explorar vagas" }
+        : (savedJobs.data?.length ?? 0) === 0
+          ? { title: "Salve vagas para ver depois", detail: "Marque oportunidades interessantes e acompanhe tudo em uma lista pessoal.", to: "/vagas", label: "Ver vagas" }
+          : { title: "Acompanhe sua jornada", detail: "Confira suas conversas, candidaturas e eventos de carreira em um só lugar.", to: "/calendario", label: "Abrir calendário" };
 
   if (roleQuery.isLoading) return <div className="container-page py-16 text-muted-foreground">Carregando suas candidaturas…</div>;
 
@@ -37,7 +58,8 @@ function ApplicationsInbox() {
     <>
       <PageHeader eyebrow="Área da conta" title="Candidaturas e conversas" description="Acompanhe oportunidades, inscrições e mensagens em um só lugar." />
       <div className="container-page max-w-4xl space-y-10 py-8 sm:py-10">
-        {role === "visitor" && <section className="rounded-xl border bg-primary-soft/50 p-5"><h2 className="font-bold">Seu próximo passo</h2><p className="mt-1 text-sm text-muted-foreground">Mantenha seu currículo e preferências de carreira em dia para encontrar oportunidades mais adequadas.</p><div className="mt-4 flex flex-wrap gap-2"><Button asChild size="sm"><Link to="/alertas">Configurar alertas</Link></Button><Button asChild variant="outline" size="sm"><Link to="/vagas-salvas">Ver vagas salvas</Link></Button><Button asChild variant="outline" size="sm"><Link to="/calendario">Abrir calendário</Link></Button></div></section>}
+        {role === "visitor" && <section className="rounded-xl border bg-primary-soft/50 p-5"><h2 className="font-bold">Seu próximo passo</h2><p className="mt-1 font-semibold">{studentProfile.isLoading || alertPreferences.isLoading || savedJobs.isLoading ? "Carregando suas recomendações…" : nextStep.title}</p><p className="mt-1 text-sm text-muted-foreground">{studentProfile.isLoading || alertPreferences.isLoading || savedJobs.isLoading ? "" : nextStep.detail}</p><div className="mt-4 flex flex-wrap gap-2"><Button asChild size="sm"><Link to={nextStep.to}>{nextStep.label}</Link></Button><Button asChild variant="outline" size="sm"><Link to="/alertas">Alertas</Link></Button><Button asChild variant="outline" size="sm"><Link to="/vagas-salvas">Vagas salvas</Link></Button><Button asChild variant="outline" size="sm"><Link to="/perfil">Meu perfil</Link></Button></div></section>}
+        {(role === "company" || role === "professor") && <section aria-labelledby="published-jobs-title"><h2 id="published-jobs-title" className="mb-4 text-xl font-bold">Minhas vagas publicadas</h2>{publishedJobs.isLoading ? <p className="text-sm text-muted-foreground">Carregando vagas…</p> : publishedJobs.isError ? <p role="alert" className="text-sm text-destructive">Não foi possível carregar suas vagas publicadas.</p> : publishedJobs.data?.length ? <ul className="divide-y rounded-xl border bg-card">{publishedJobs.data.map((job) => { const expired = !!job.closesAt && Date.parse(job.closesAt) <= Date.now(); const closed = job.status === "closed" || expired; return <li key={job.slug} className="flex items-center gap-3 p-4"><BriefcaseBusiness className="h-5 w-5 shrink-0 text-primary" /><span className="min-w-0 flex-1"><span className="block truncate font-semibold">{job.title}</span><span className="text-sm text-muted-foreground">{job.city} · {closed ? "Encerrada" : "Ativa"}</span></span><Button asChild size="sm" variant="outline"><Link to="/vagas/$slug" params={{ slug: job.slug }}>Ver</Link></Button>{!closed && <Button size="sm" variant="outline" onClick={() => void finishJob(job.slug)}>Encerrar</Button>}</li>; })}</ul> : <p className="rounded-xl border p-4 text-sm text-muted-foreground">Você ainda não publicou vagas. <Link className="font-medium text-primary underline" to="/publicar">Publicar vaga</Link></p>}</section>}
         {canReceive && <ApplicationSection title="Candidaturas recebidas" description="Converse com quem se candidatou às suas vagas." items={received.data ?? []} loading={received.isLoading} error={received.isError} incoming />}
         {canApply && <ApplicationSection title="Minhas candidaturas" description="Veja o andamento das suas inscrições e abra a conversa com o anunciante." items={sent.data ?? []} loading={sent.isLoading} error={sent.isError} />}
         {canApply && (

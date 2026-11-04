@@ -34,6 +34,8 @@ export interface Job {
   benefits: string[];
   salary?: string;
   publishedAt: string; // ISO date
+  status?: "open" | "closed";
+  closesAt?: string | null;
 }
 
 export interface Company {

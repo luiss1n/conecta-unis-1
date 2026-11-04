@@ -6,7 +6,7 @@ import { ApplicationConsent } from "@/components/jobs/ApplicationConsent";
 import { SaveJobButton } from "@/components/jobs/SaveJobButton";
 import { JobTypeBadge } from "@/components/jobs/JobCard";
 import { formatDate, jobPublisher, modeLabel, scheduleLabel, typeLabel } from "@/lib/jobs";
-import { getJob } from "@/services/api";
+import { getJob, isJobAvailable } from "@/services/api";
 
 export const Route = createFileRoute("/vagas/$slug")({
   loader: async ({ params }) => {
@@ -63,6 +63,7 @@ function JobDetails() {
   const { job } = Route.useLoaderData();
   const company = job.company;
   const publisher = jobPublisher(job);
+  const available = isJobAvailable(job);
   const meta = [
     { icon: MapPin, label: job.city },
     { icon: Monitor, label: modeLabel[job.mode] },
@@ -82,6 +83,7 @@ function JobDetails() {
       </nav>
 
       <header className="mt-6 rounded-xl border bg-card p-6 shadow-card sm:p-8">
+        {!available && <p role="status" className="mb-4 rounded-lg bg-muted px-4 py-3 text-sm font-medium text-muted-foreground">Esta vaga foi encerrada ou passou da data limite para candidatura.</p>}
         <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
           <CompanyAvatar company={company} label={publisher} size="lg" />
           <div className="min-w-0">
@@ -123,7 +125,7 @@ function JobDetails() {
           )}
         </div>
         <aside className="space-y-6 lg:sticky lg:top-24 lg:self-start">
-          <ApplicationConsent companyName={publisher} jobSlug={job.slug} />
+          {available ? <ApplicationConsent companyName={publisher} jobSlug={job.slug} /> : <div className="rounded-xl border bg-card p-5 text-sm text-muted-foreground">As candidaturas para esta vaga estão encerradas. <Link to="/vagas" className="font-semibold text-primary underline">Ver outras vagas</Link></div>}
         </aside>
       </div>
     </div>

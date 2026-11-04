@@ -138,7 +138,13 @@ function toJob(r: JobRow, company?: Company): Job {
     benefits: r.benefits,
     ...(r.salary ? { salary: r.salary } : {}),
     publishedAt: r.publishedAt,
+    status: r.status === "closed" ? "closed" : "open",
+    closesAt: r.closes_at,
   };
+}
+
+export function isJobAvailable(job: Job): boolean {
+  return job.status === "open" && (!job.closesAt || Date.parse(job.closesAt) > Date.now());
 }
 
 function toEvent(r: EventRow): CareerEvent {
@@ -168,14 +174,15 @@ export async function getCompany(slug: string): Promise<Company | undefined> {
 }
 
 /** Todas as vagas, da mais recente para a mais antiga, já com a empresa resolvida. */
-export async function getJobs(): Promise<Job[]> {
+export async function getJobs(options: { includeClosed?: boolean } = {}): Promise<Job[]> {
   const [jobsRes, companies] = await Promise.all([
     supabase.from("jobs").select("*").order("publishedAt", { ascending: false }),
     getCompanies(),
   ]);
   if (jobsRes.error) throw jobsRes.error;
   const bySlug = new Map(companies.map((c) => [c.slug, c]));
-  return (jobsRes.data ?? []).map((r) => toJob(r, r.companySlug ? bySlug.get(r.companySlug) : undefined));
+  const mapped = (jobsRes.data ?? []).map((r) => toJob(r, r.companySlug ? bySlug.get(r.companySlug) : undefined));
+  return options.includeClosed ? mapped : mapped.filter(isJobAvailable);
 }
 
 export async function getJob(slug: string): Promise<Job | undefined> {
@@ -190,6 +197,28 @@ export async function getMySavedJobSlugs(): Promise<string[]> {
   const { data, error } = await supabase.from("saved_jobs").select("job_slug").eq("user_id", user.id).order("created_at", { ascending: false });
   if (error) throw new Error("Não foi possível carregar suas vagas salvas.");
   return (data ?? []).map((row) => row.job_slug);
+}
+
+export async function getMyAlertPreferences() {
+  const user = await requireUser();
+  const { data, error } = await supabase.from("student_job_alert_preferences").select("enabled,categories,cities").eq("user_id", user.id).maybeSingle();
+  if (error) throw new Error("Não foi possível carregar suas preferências de alerta.");
+  return data;
+}
+
+export async function closeJob(slug: string): Promise<void> {
+  await requireUser();
+  const { data, error } = await supabase.from("jobs").update({ status: "closed" }).eq("slug", slug).eq("status", "open").select("slug");
+  if (error || !data?.length) throw new Error("Não foi possível encerrar a vaga. Confira se ela pertence à sua conta.");
+}
+
+export async function getMyPublishedJobs(): Promise<Job[]> {
+  const user = await requireUser();
+  const { data, error } = await supabase.from("jobs").select("*").eq("owner_id", user.id).order("publishedAt", { ascending: false });
+  if (error) throw new Error("Não foi possível carregar suas vagas publicadas.");
+  const companies = await getCompanies();
+  const bySlug = new Map(companies.map((company) => [company.slug, company]));
+  return (data ?? []).map((row) => toJob(row, row.companySlug ? bySlug.get(row.companySlug) : undefined));
 }
 
 export async function toggleSavedJob(slug: string, saved: boolean): Promise<void> {
@@ -211,7 +240,7 @@ export async function getJobsByCompany(slug: string): Promise<Job[]> {
   const { data, error } = await supabase.from("jobs").select("*").eq("companySlug", slug).order("publishedAt", { ascending: false });
   if (error) throw error;
   const company = await getCompany(slug);
-  return (data ?? []).map((r) => toJob(r, company));
+  return (data ?? []).map((r) => toJob(r, company)).filter(isJobAvailable);
 }
 
 /** Eventos em ordem cronológica. Com `upcomingOnly`, só os que ainda não aconteceram. */
@@ -272,6 +301,7 @@ export async function submitJobApplication(jobSlug: string, coverMessage: string
   if (error) {
     if (error.message.includes("already applied")) throw new Error("Você já se candidatou a esta vaga.");
     if (error.message.includes("Complete your profile")) throw new Error("Complete seu nome e e-mail no perfil antes de se candidatar.");
+    if (error.message.includes("closed or expired")) throw new Error("O prazo desta vaga terminou e ela não aceita novas candidaturas.");
     throw new Error("Não foi possível enviar sua candidatura. Confira seu perfil e tente novamente.");
   }
   return data;
@@ -450,6 +480,7 @@ export interface NewJobValues {
   requirements: string[];
   benefits: string[];
   salary?: string | undefined;
+  closesAt?: string | undefined;
 }
 
 function jobPayload(values: NewJobValues) {
@@ -466,6 +497,7 @@ function jobPayload(values: NewJobValues) {
     requirements: values.requirements,
     benefits: values.benefits,
     salary: values.salary?.trim() || null,
+    closes_at: values.closesAt || null,
   };
 }
 

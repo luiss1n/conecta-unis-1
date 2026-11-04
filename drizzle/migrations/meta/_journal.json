@@ -92,6 +92,13 @@
       "when": 1793218020000,
       "tag": "0013_safe_publication_drafts",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1793743200000,
+      "tag": "0015_job_closing_and_deadlines",
+      "breakpoints": true
     }
   ]
 }

@@ -245,6 +245,7 @@ export type Database = {
           benefits: string[]
           category: string
           city: string
+          closes_at: string | null
           companySlug: string | null
           description: string
           mode: string
@@ -254,6 +255,7 @@ export type Database = {
           requirements: string[]
           salary: string | null
           schedule: string
+          status: string
           slug: string
           summary: string
           title: string
@@ -264,6 +266,7 @@ export type Database = {
           benefits?: string[]
           category: string
           city: string
+          closes_at?: string | null
           companySlug?: string | null
           description: string
           mode: string
@@ -273,6 +276,7 @@ export type Database = {
           requirements?: string[]
           salary?: string | null
           schedule: string
+          status?: string
           slug?: string
           summary: string
           title: string
@@ -283,6 +287,7 @@ export type Database = {
           benefits?: string[]
           category?: string
           city?: string
+          closes_at?: string | null
           companySlug?: string | null
           description?: string
           mode?: string
@@ -292,6 +297,7 @@ export type Database = {
           requirements?: string[]
           salary?: string | null
           schedule?: string
+          status?: string
           slug?: string
           summary?: string
           title?: string

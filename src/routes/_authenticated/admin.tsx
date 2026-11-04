@@ -24,6 +24,7 @@ import { formatDate, formatEventDate, jobPublisher, typeLabel } from "@/lib/jobs
 import {
   deleteEvent,
   deleteJob,
+  closeJob,
   getCompanies,
   getEvents,
   getJobs,
@@ -83,7 +84,7 @@ function AdminPage() {
   const qc = useQueryClient();
   const role = useQuery({ queryKey: ["my-role"], queryFn: getMyRole });
   const isAdmin = role.data === "admin";
-  const jobs = useQuery({ queryKey: ["admin-jobs"], queryFn: getJobs, enabled: isAdmin });
+  const jobs = useQuery({ queryKey: ["admin-jobs"], queryFn: () => getJobs({ includeClosed: true }), enabled: isAdmin });
   const events = useQuery({ queryKey: ["admin-events"], queryFn: () => getEvents(), enabled: isAdmin });
   const companies = useQuery({ queryKey: ["admin-companies"], queryFn: getCompanies, enabled: isAdmin });
   const applicationCounts = useQuery({ queryKey: ["admin-application-counts"], queryFn: getAdminApplicationCounts, enabled: isAdmin, staleTime: 60_000 });
@@ -105,6 +106,11 @@ function AdminPage() {
     }
   }
 
+  async function closePublishedJob(slug: string) {
+    try { await closeJob(slug); await qc.invalidateQueries({ queryKey: ["admin-jobs"] }); toast.success("Vaga encerrada."); }
+    catch (error) { toast.error(error instanceof Error ? error.message : "Não foi possível encerrar a vaga."); }
+  }
+
   if (role.isLoading) {
     return <div className="container-page py-16 text-center text-muted-foreground">Carregando…</div>;
   }
@@ -123,7 +129,8 @@ function AdminPage() {
   const jobList = jobs.data ?? [];
   const eventList = events.data ?? [];
   const visibleJobs = jobList.filter((job) => {
-    const matchesState = publicationFilter === "all" || publicationFilter === "active";
+    const unavailable = job.status === "closed" || (!!job.closesAt && Date.parse(job.closesAt) <= Date.now());
+    const matchesState = publicationFilter === "all" || (publicationFilter === "closed" ? unavailable : !unavailable);
     const query = search.trim().toLocaleLowerCase("pt-BR");
     return matchesState && (!query || `${job.title} ${job.city} ${jobPublisher(job)}`.toLocaleLowerCase("pt-BR").includes(query));
   });
@@ -216,12 +223,13 @@ function AdminPage() {
                     <div className="min-w-0 flex-1">
                       <p className="truncate font-bold">{j.title}</p>
                       <p className="truncate text-sm text-muted-foreground">
-                        {jobPublisher(j)} · {j.city} · {typeLabel[j.type]} · {formatDate(j.publishedAt)} · {applicationCounts.data?.[j.slug] ?? 0} candidaturas
+                        {jobPublisher(j)} · {j.city} · {typeLabel[j.type]} · {formatDate(j.publishedAt)} · {j.status === "closed" || (j.closesAt && Date.parse(j.closesAt) <= Date.now()) ? "Encerrada" : "Ativa"}{j.closesAt ? ` · limite ${formatDate(j.closesAt)}` : ""} · {applicationCounts.data?.[j.slug] ?? 0} candidaturas
                       </p>
                     </div>
                     <div className="flex flex-wrap gap-1">
                       <Button asChild variant="ghost" size="sm"><Link to="/vagas/$slug" params={{ slug: j.slug }}>Ver</Link></Button>
                       <Button variant="outline" size="sm" onClick={() => setEditing({ kind: "job", item: j })}>Editar</Button>
+                      {j.status === "open" && !(j.closesAt && Date.parse(j.closesAt) <= Date.now()) && <Button variant="outline" size="sm" onClick={() => void closePublishedJob(j.slug)}>Encerrar</Button>}
                       <ConfirmDelete title={j.title} onConfirm={() => remove(() => deleteJob(j.slug), "Vaga excluída.")} />
                     </div>
                   </li>

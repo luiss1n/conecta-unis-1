@@ -10,6 +10,14 @@ import { getRegionalCities } from "@/services/api";
 
 type Values = NewJobValues & { companySlug: string | null; publisherName: string | null };
 
+function toLocalDateTimeInput(value?: string) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  const offset = date.getTimezoneOffset() * 60_000;
+  return new Date(date.getTime() - offset).toISOString().slice(0, 16);
+}
+
 interface Props {
   /** Vaga existente (edição). Sem isso, o formulário cria uma nova. */
   initial?: Job | undefined;
@@ -44,6 +52,7 @@ export function JobForm({ initial, admin = false, companies = [], submitLabel, s
     requirements: (initial?.requirements ?? []).join("\n"),
     benefits: (initial?.benefits ?? []).join("\n"),
     salary: initial?.salary ?? "",
+    closesAt: toLocalDateTimeInput(initial?.closesAt ?? undefined),
     companySlug: initial?.companySlug ?? "",
     publisherName: initial?.publisherName ?? DEFAULT_PUBLISHER,
   });
@@ -92,6 +101,7 @@ export function JobForm({ initial, admin = false, companies = [], submitLabel, s
         requirements: lines(form.requirements),
         benefits: lines(form.benefits),
         salary: form.salary || undefined,
+        closesAt: form.closesAt ? new Date(form.closesAt).toISOString() : undefined,
         companySlug: admin && form.companySlug ? form.companySlug : null,
         publisherName: admin && !form.companySlug ? form.publisherName : null,
       });
@@ -162,6 +172,9 @@ export function JobForm({ initial, admin = false, companies = [], submitLabel, s
         </Field>
         <Field label="Salário / bolsa (opcional)">
           <input className={inputCls} value={form.salary} onChange={set("salary")} maxLength={100} placeholder="Ex.: R$ 1.500" />
+        </Field>
+        <Field label="Data limite para candidatura (opcional)">
+          <input className={inputCls} type="datetime-local" value={form.closesAt} onChange={set("closesAt")} min={!isEditing ? toLocalDateTimeInput(new Date(Date.now() + 60_000).toISOString()) : undefined} />
         </Field>
       </div>
       <Field label="Resumo">
