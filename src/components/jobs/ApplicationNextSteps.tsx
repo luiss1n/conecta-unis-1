@@ -36,12 +36,12 @@ export function ApplicationNextSteps({ item, profileText }: { item: ApplicationL
     return words.length > 0 && words.some((word) => profileTokens.has(word));
   });
   const missing = requirements.filter((requirement) => !matched.includes(requirement));
-  const checklist = (saved.data?.checklist ?? {}) as Partial<Checklist>;
+  const checklist = { review_job: false, tailor_resume: false, prepare_examples: false, prepare_questions: false, ...saved.data?.checklist } as Checklist;
   const completed = checklistItems.filter(([key]) => checklist[key]).length;
   const currentReflection = reflection ?? saved.data?.reflection ?? "";
 
   async function updateChecklist(key: keyof Checklist, checked: boolean) {
-    const next = { ...checklist, [key]: checked } as Checklist;
+    const next = { ...checklist, [key]: checked };
     await mutation.mutateAsync({ checklist: next, reflection: currentReflection });
   }
 

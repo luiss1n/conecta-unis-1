@@ -12,6 +12,12 @@ export type Database = {
   }
   public: {
     Tables: {
+      application_next_steps: {
+        Row: { application_id: string; applicant_id: string; checklist: Json; reflection: string; updated_at: string }
+        Insert: { application_id: string; applicant_id: string; checklist?: Json; reflection?: string; updated_at?: string }
+        Update: { application_id?: string; applicant_id?: string; checklist?: Json; reflection?: string; updated_at?: string }
+        Relationships: []
+      }
       regional_cities: {
         Row: { city: string; latitude: number; longitude: number; is_sre_caxambu: boolean }
         Insert: { city: string; latitude: number; longitude: number; is_sre_caxambu?: boolean }
