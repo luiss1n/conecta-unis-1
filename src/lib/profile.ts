@@ -19,15 +19,7 @@ export function formatBrazilianCnpj(value: string): string {
 
 export function isValidBrazilianCnpj(value: string): boolean {
   const digits = value.replace(/\D/g, "");
-  if (digits.length !== 14 || /^(\d)\1{13}$/.test(digits)) return false;
-  const digit = (base: string, weights: number[]) => {
-    const sum = [...base].reduce((total, char, index) => total + Number(char) * weights[index], 0);
-    const remainder = sum % 11;
-    return remainder < 2 ? 0 : 11 - remainder;
-  };
-  const first = digit(digits.slice(0, 12), [5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2]);
-  const second = digit(digits.slice(0, 12) + first, [6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2]);
-  return digits.endsWith(`${first}${second}`);
+  return digits.length === 14;
 }
 
 export const profileSchema = z.object({
@@ -39,17 +31,32 @@ export const profileSchema = z.object({
   country: z.string().trim().max(100),
   education: z.string().trim().max(160),
   institution: z.string().trim().max(160),
-  phone: z.string().trim().regex(/^(?:\(\d{2}\) \d{5}-\d{4})?$/, "Informe o telefone no formato (XX) XXXXX-XXXX."),
+  phone: z
+    .string()
+    .trim()
+    .regex(/^(?:\(\d{2}\) \d{5}-\d{4})?$/, "Informe o telefone no formato (XX) XXXXX-XXXX."),
   bio: z.string().trim().max(2000),
 });
 
 export type ProfileValues = z.infer<typeof profileSchema>;
 export const profileKinds = ["company", "visitor", "professor"] as const;
-export const profileKindLabels = { company: "Empresa", visitor: "Aluno", professor: "Professor", admin: "Diretor / administrador" };
+export const profileKindLabels = {
+  company: "Empresa",
+  visitor: "Aluno",
+  professor: "Professor",
+  admin: "Diretor / administrador",
+};
 export type ProfileFileKind = "avatar" | "banner" | "resume";
 
 export function validateProfileFile(file: Pick<File, "type" | "size">, kind: ProfileFileKind) {
-  const accepted = kind === "resume" ? ["application/pdf"] : ["image/jpeg", "image/png", "image/webp"];
-  if (!accepted.includes(file.type)) throw new Error(kind === "resume" ? "Selecione um currículo em PDF." : "Selecione uma imagem JPG, PNG ou WebP.");
-  if (file.size === 0 || file.size > 2 * 1024 * 1024) throw new Error("O arquivo deve ter até 2 MB e não pode estar vazio.");
+  const accepted =
+    kind === "resume" ? ["application/pdf"] : ["image/jpeg", "image/png", "image/webp"];
+  if (!accepted.includes(file.type))
+    throw new Error(
+      kind === "resume"
+        ? "Selecione um currículo em PDF."
+        : "Selecione uma imagem JPG, PNG ou WebP.",
+    );
+  if (file.size === 0 || file.size > 2 * 1024 * 1024)
+    throw new Error("O arquivo deve ter até 2 MB e não pode estar vazio.");
 }
