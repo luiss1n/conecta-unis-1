@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { DEFAULT_PUBLISHER } from "@/lib/jobs";
@@ -47,11 +47,34 @@ export function JobForm({ initial, admin = false, companies = [], submitLabel, s
     companySlug: initial?.companySlug ?? "",
     publisherName: initial?.publisherName ?? DEFAULT_PUBLISHER,
   });
-  const availableCities = useMemo(() => {
-    const cities = new Map(regionalCities.map((item) => [item.city, item]));
-    if (form.city && !cities.has(form.city)) cities.set(form.city, { city: form.city, is_sre_caxambu: false, latitude: 0, longitude: 0 });
-    return [...cities.values()].sort((a, b) => a.city.localeCompare(b.city, "pt-BR"));
-  }, [form.city, regionalCities]);
+  const [citySuggestions, setCitySuggestions] = useState<string[]>([]);
+  const [citySuggestionsError, setCitySuggestionsError] = useState(false);
+  const [citySuggestionsLoading, setCitySuggestionsLoading] = useState(false);
+  const [cityMenuOpen, setCityMenuOpen] = useState(false);
+  const cityRequest = useRef(0);
+  useEffect(() => {
+    const query = form.city.trim();
+    if (query.length < 2) { setCitySuggestions([]); setCityMenuOpen(false); return; }
+    const request = ++cityRequest.current;
+    const timer = window.setTimeout(async () => {
+      setCitySuggestionsLoading(true);
+      setCitySuggestionsError(false);
+      try {
+        const response = await fetch(`https://servicodados.ibge.gov.br/api/v1/localidades/municipios?nome=${encodeURIComponent(query)}`);
+        if (!response.ok) throw new Error("Falha ao buscar municípios");
+        const data = await response.json() as Array<{ nome: string; microrregiao?: { mesorregiao?: { UF?: { sigla: string } } }; "regiao-imediata"?: { "regiao-intermediaria"?: { UF?: { sigla: string } } } }>;
+        if (request !== cityRequest.current) return;
+        const suggestions = [...new Set(data.map((item) => `${item.nome} - ${item.microrregiao?.mesorregiao?.UF?.sigla ?? item["regiao-imediata"]?.["regiao-intermediaria"]?.UF?.sigla ?? "Brasil"}`))].slice(0, 10);
+        setCitySuggestions(suggestions);
+        setCityMenuOpen(true);
+      } catch {
+        if (request === cityRequest.current) setCitySuggestionsError(true);
+      } finally {
+        if (request === cityRequest.current) setCitySuggestionsLoading(false);
+      }
+    }, 300);
+    return () => window.clearTimeout(timer);
+  }, [form.city]);
   useEffect(() => {
     if (isEditing || admin) { setDraftReady(true); return; }
     let active = true;
@@ -158,11 +181,11 @@ export function JobForm({ initial, admin = false, companies = [], submitLabel, s
           </select>
         </Field>
         <Field label="Cidade">
-          <select className={inputCls} value={form.city} onChange={set("city")} required disabled={citiesLoading || !!citiesError}>
-            <option value="">{citiesLoading ? "Carregando cidades…" : citiesError ? "Não foi possível carregar cidades" : "Selecione uma cidade"}</option>
-            {availableCities.map(({ city, is_sre_caxambu }) => <option key={city} value={city}>{city}{is_sre_caxambu ? " · SRE Caxambu" : " · até 20 km"}</option>)}
-          </select>
-          {citiesError && <p role="alert" className="text-xs text-destructive">Não foi possível carregar as cidades. Atualize a página e tente de novo.</p>}
+          <div className="relative">
+            <input className={inputCls} value={form.city} onChange={(event) => { set("city")(event); setCityMenuOpen(true); }} onFocus={() => { if (form.city.trim().length >= 2) setCityMenuOpen(true); }} onBlur={() => window.setTimeout(() => setCityMenuOpen(false), 150)} autoComplete="address-level2" role="combobox" aria-autocomplete="list" aria-expanded={cityMenuOpen && citySuggestions.length > 0} aria-controls="job-city-suggestions" required maxLength={100} placeholder="Digite uma cidade do Brasil" />
+            {cityMenuOpen && form.city.trim().length >= 2 && <ul id="job-city-suggestions" role="listbox" className="absolute z-20 mt-1 max-h-60 w-full overflow-y-auto rounded-md border bg-popover p-1 text-popover-foreground shadow-lg">{citySuggestionsLoading && <li className="px-3 py-2 text-sm text-muted-foreground">Buscando cidades…</li>}{!citySuggestionsLoading && citySuggestions.map((city) => <li key={city} role="option" aria-selected={form.city === city}><button type="button" className="w-full rounded px-3 py-2 text-left text-sm hover:bg-accent focus-visible:bg-accent" onMouseDown={(event) => event.preventDefault()} onClick={() => { setForm((current) => ({ ...current, city })); setCityMenuOpen(false); }}>{city}</button></li>)}{!citySuggestionsLoading && !citySuggestions.length && <li className="px-3 py-2 text-sm text-muted-foreground">{citySuggestionsError ? "Não foi possível buscar sugestões. Você pode manter a cidade digitada." : "Nenhuma sugestão encontrada. Você pode manter a cidade digitada."}</li>}</ul>}
+          </div>
+          <p className="text-xs text-muted-foreground">Digite para ver sugestões de municípios do IBGE ou informe a cidade manualmente.</p>
         </Field>
         <Field label="Salário / bolsa (opcional)">
           <input className={inputCls} value={form.salary} onChange={set("salary")} maxLength={100} placeholder="Ex.: R$ 1.500" />
