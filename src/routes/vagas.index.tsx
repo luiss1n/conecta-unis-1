@@ -14,6 +14,7 @@ import type { JobCategory, JobFilters, JobType, Schedule, WorkMode } from "@/typ
 export const Route = createFileRoute("/vagas/")({
   validateSearch: z.object({ q: z.string().optional() }),
   loader: async () => ({ jobs: await getJobs() }),
+  staleTime: 30_000,
   head: () => ({
     meta: [
       { title: "Vagas de estágio e emprego — CONECTA UNIS" },
