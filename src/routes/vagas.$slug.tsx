@@ -1,13 +1,14 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { Briefcase, CalendarDays, CheckCircle2, ChevronRight, Clock, Gift, MapPin, Monitor } from "lucide-react";
 import type { ReactNode } from "react";
+import { useEffect } from "react";
 import { CompanyAvatar } from "@/components/common/CompanyAvatar";
 import { ReportPublicationButton } from "@/components/common/ReportPublicationButton";
 import { ApplicationConsent } from "@/components/jobs/ApplicationConsent";
 import { SaveJobButton } from "@/components/jobs/SaveJobButton";
 import { JobTypeBadge } from "@/components/jobs/JobCard";
 import { formatDate, jobPublisher, modeLabel, scheduleLabel, typeLabel } from "@/lib/jobs";
-import { getJob, isJobAvailable } from "@/services/api";
+import { getJob, isJobAvailable, recordJobView } from "@/services/api";
 
 export const Route = createFileRoute("/vagas/$slug")({
   loader: async ({ params }) => {
@@ -62,6 +63,7 @@ function List({ items }: { items: string[] }) {
 
 function JobDetails() {
   const { job } = Route.useLoaderData();
+  useEffect(() => { void recordJobView(job.slug); }, [job.slug]);
   const company = job.company;
   const publisher = jobPublisher(job);
   const available = isJobAvailable(job);

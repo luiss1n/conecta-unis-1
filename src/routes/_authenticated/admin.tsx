@@ -5,6 +5,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { EmptyState } from "@/components/common/EmptyState";
 import { PageHeader } from "@/components/common/PageHeader";
+import { NafDashboard } from "@/components/admin/NafDashboard";
 import { EventForm } from "@/components/forms/EventForm";
 import { JobForm } from "@/components/forms/JobForm";
 import {
@@ -229,10 +230,11 @@ function AdminPage() {
         </ul>
 
         <Tabs value={tab} onValueChange={setTab} className="mt-8">
-          <TabsList>
+          <TabsList className="h-auto flex-wrap justify-start gap-1">
             <TabsTrigger value="vagas">Vagas ({jobList.length})</TabsTrigger>
             <TabsTrigger value="eventos">Eventos ({eventList.length})</TabsTrigger>
             <TabsTrigger value="denuncias"><Flag className="mr-1 h-4 w-4" />Denúncias ({(reports.data ?? []).filter((report) => report.status === "pending").length})</TabsTrigger>
+            <TabsTrigger value="naf">NAF · Relatórios</TabsTrigger>
           </TabsList>
 
           <TabsContent value="vagas" className="mt-5">
@@ -298,6 +300,7 @@ function AdminPage() {
             <p className="mb-4 text-sm text-muted-foreground">Analise relatos de usuários. A análise não remove automaticamente a publicação; use as ações de vagas ou eventos após revisar o conteúdo.</p>
             {reports.isLoading ? <p className="text-sm text-muted-foreground">Carregando denúncias…</p> : reports.isError ? <p role="alert" className="text-sm text-destructive">Não foi possível carregar as denúncias. Confira se a migration de moderação foi aplicada.</p> : reports.data?.length ? <ul className="space-y-3">{reports.data.map((report) => { const hidden = report.target_kind === "job" ? jobList.find((job) => job.slug === report.target_ref)?.isHidden : eventList.find((event) => event.id === report.target_ref)?.isHidden; return <li key={report.id} className="rounded-xl border bg-card p-4"><div className="flex flex-wrap items-start justify-between gap-3"><div className="min-w-0"><p className="break-all font-semibold">{report.target_kind === "job" ? "Vaga" : "Evento"} · {report.target_ref}</p><p className="mt-1 whitespace-pre-wrap text-sm text-muted-foreground">{report.reason}</p><p className="mt-2 text-xs text-muted-foreground">{new Date(report.created_at).toLocaleString("pt-BR")} · {report.status === "pending" ? "Pendente" : report.status === "resolved" ? "Analisada" : "Arquivada"}</p></div><div className="flex flex-wrap gap-2">{report.target_kind === "job" ? <><Button asChild size="sm" variant="outline" className="min-h-11"><Link to="/vagas/$slug" params={{ slug: report.target_ref }}>Abrir vaga</Link></Button><Button size="sm" variant="outline" className="min-h-11" onClick={() => void changeVisibility("job", report.target_ref, !hidden)}>{hidden ? "Restaurar" : "Ocultar"}</Button></> : <><Button asChild size="sm" variant="outline" className="min-h-11"><Link to="/eventos/$id" params={{ id: report.target_ref }}>Abrir evento</Link></Button><Button size="sm" variant="outline" className="min-h-11" onClick={() => void changeVisibility("event", report.target_ref, !hidden)}>{hidden ? "Restaurar" : "Ocultar"}</Button></>}{report.status === "pending" && <><Button size="sm" className="min-h-11" onClick={() => void reviewReport(report.id, "resolved")}>Marcar analisada</Button><Button size="sm" variant="outline" className="min-h-11" onClick={() => void reviewReport(report.id, "dismissed")}>Arquivar</Button></>}</div></div></li>; })}</ul> : <EmptyState title="Nenhuma denúncia recebida" description="As denúncias enviadas pelos usuários aparecerão aqui." />}
           </TabsContent>
+          <TabsContent value="naf" className="mt-5"><NafDashboard /></TabsContent>
         </Tabs>
 
         <p className="mt-8 flex items-center gap-2 text-xs text-muted-foreground">

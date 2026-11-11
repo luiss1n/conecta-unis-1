@@ -570,20 +570,50 @@ export async function getReceivedApplications(): Promise<ApplicationListItem[]> 
   if (jobsError) throwSupabaseError("Não foi possível carregar suas vagas", jobsError);
   const slugs = (jobs ?? []).map((job) => job.slug);
   if (!slugs.length) return [];
-  const { data, error } = await supabase
-    .from("job_applications")
-    .select("*")
-    .in("job_slug", slugs)
-    .order("created_at", { ascending: false })
-    .limit(100);
-  if (error) throwSupabaseError("Não foi possível carregar as candidaturas recebidas", error);
-  return attachApplicationJobs(data ?? []);
+  const all: JobApplication[] = [];
+  for (let offset = 0; ; offset += 1000) {
+    const { data, error } = await supabase
+      .from("job_applications")
+      .select("*")
+      .in("job_slug", slugs)
+      .order("created_at", { ascending: false })
+      .range(offset, offset + 999);
+    if (error) throwSupabaseError("Não foi possível carregar as candidaturas recebidas", error);
+    all.push(...(data ?? []));
+    if (!data || data.length < 1000) break;
+  }
+  return attachApplicationJobs(all);
 }
 
 export async function getAdminApplicationCounts(): Promise<Record<string, number>> {
   const { data, error } = await supabase.rpc("get_admin_publication_counts");
   if (error) throwSupabaseError("Não foi possível carregar os totais de candidaturas", error);
   return (data ?? {}) as Record<string, number>;
+}
+
+export type NafJobAnalytics = {
+  jobs: { slug: string; title: string; views: number; applications: number }[];
+  series: { date: string; views: number; applications: number }[];
+};
+
+export async function getNafJobAnalytics(days: 1 | 7 | 30): Promise<NafJobAnalytics> {
+  const { data, error } = await supabase.rpc("get_naf_job_analytics", { _days: days });
+  if (error) throwSupabaseError("Não foi possível carregar o relatório do NAF", error);
+  return data as unknown as NafJobAnalytics;
+}
+
+export async function recordJobView(slug: string): Promise<void> {
+  if (typeof window === "undefined") return;
+  const key = "conecta-unis-viewer-id";
+  let viewerId: string;
+  try {
+    viewerId = window.localStorage.getItem(key) || crypto.randomUUID();
+    window.localStorage.setItem(key, viewerId);
+  } catch {
+    viewerId = crypto.randomUUID();
+  }
+  const { error } = await supabase.rpc("record_job_view", { _job_slug: slug, _viewer_id: viewerId });
+  if (error) console.error("Não foi possível registrar a visualização da vaga", error);
 }
 
 export async function getApplicationConversation(applicationId: string) {

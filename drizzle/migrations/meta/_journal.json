@@ -127,6 +127,20 @@
       "when": 1793797800000,
       "tag": "0019_application_next_steps",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1793798400000,
+      "tag": "0020_relax_company_test_registration",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1794400000000,
+      "tag": "0021_naf_job_analytics",
+      "breakpoints": true
     }
   ]
 }

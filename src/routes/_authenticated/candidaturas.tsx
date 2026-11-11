@@ -95,19 +95,22 @@ function ApplicationSection({ title, description, items, loading, error, incomin
   title: string; description: string; items: ApplicationListItem[]; loading: boolean; error: boolean; incoming?: boolean; profileText?: string;
 }) {
   const [status, setStatus] = useState("all");
+  const [jobFilter, setJobFilter] = useState("all");
   const [search, setSearch] = useState("");
+  const jobOptions = useMemo(() => [...new Map(items.map(({ job }) => [job.slug, job.title])).entries()], [items]);
   const filtered = useMemo(() => items.filter(({ application, job }) => {
     const matchesStatus = status === "all" || application.status === status;
+    const matchesJob = jobFilter === "all" || application.job_slug === jobFilter;
     const target = incoming ? `${application.applicant_name} ${job.title}` : `${job.title} ${job.publisherName || job.company?.name || ""}`;
-    return matchesStatus && target.toLocaleLowerCase("pt-BR").includes(search.trim().toLocaleLowerCase("pt-BR"));
-  }), [incoming, items, search, status]);
+    return matchesStatus && matchesJob && target.toLocaleLowerCase("pt-BR").includes(search.trim().toLocaleLowerCase("pt-BR"));
+  }), [incoming, items, jobFilter, search, status]);
   return (
     <section aria-labelledby={`${title}-title`}>
       <div className="mb-4">
         <h2 id={`${title}-title`} className="text-xl font-bold">{title}</h2>
         <p className="mt-1 text-sm text-muted-foreground">{description}</p>
       </div>
-      {incoming && !loading && !error && items.length > 0 && <div className="mb-3 grid gap-2 sm:grid-cols-[minmax(0,1fr)_12rem]"><label className="sr-only" htmlFor={`${title}-search`}>Buscar candidaturas</label><input id={`${title}-search`} className="h-11 rounded-md border bg-background px-3 text-sm" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar pessoa ou vaga" /><label className="sr-only" htmlFor={`${title}-status`}>Filtrar por status</label><select id={`${title}-status`} className="h-11 rounded-md border bg-background px-3 text-sm" value={status} onChange={(event) => setStatus(event.target.value)}><option value="all">Todos os status</option><option value="received">Recebida</option><option value="reviewing">Em análise</option><option value="interview">Entrevista</option><option value="closed">Encerrada</option><option value="withdrawn">Cancelada pelo candidato</option></select></div>}
+      {incoming && !loading && !error && items.length > 0 && <div className="mb-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3"><label className="flex flex-col gap-1 text-sm font-medium">Buscar candidatos<input className="h-11 min-w-0 rounded-md border bg-background px-3 text-sm" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Nome ou vaga" /></label><label className="flex min-w-0 flex-col gap-1 text-sm font-medium">Vaga<select className="h-11 min-w-0 rounded-md border bg-background px-3 text-sm" value={jobFilter} onChange={(event) => setJobFilter(event.target.value)}><option value="all">Todas as vagas</option>{jobOptions.map(([slug, name]) => <option key={slug} value={slug}>{name}</option>)}</select></label><label className="flex flex-col gap-1 text-sm font-medium">Status<select className="h-11 rounded-md border bg-background px-3 text-sm" value={status} onChange={(event) => setStatus(event.target.value)}><option value="all">Todos os status</option><option value="received">Recebida</option><option value="reviewing">Em análise</option><option value="interview">Entrevista</option><option value="closed">Encerrada</option><option value="withdrawn">Cancelada pelo candidato</option></select></label></div>}
       {loading ? <p className="py-5 text-sm text-muted-foreground">Carregando candidaturas…</p> : error ? <p role="alert" className="py-5 text-sm text-destructive">Não foi possível carregar esta lista. Atualize a página e tente novamente.</p> : filtered.length ? (
         <ul className="divide-y rounded-xl border bg-card">
           {filtered.map(({ application, job }) => {
