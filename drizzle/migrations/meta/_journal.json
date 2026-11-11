@@ -169,6 +169,13 @@
       "when": 1794414400000,
       "tag": "0025_naf_case_permissions",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1794418000000,
+      "tag": "0026_naf_requester_names",
+      "breakpoints": true
     }
   ]
 }

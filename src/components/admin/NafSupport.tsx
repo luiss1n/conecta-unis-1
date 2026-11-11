@@ -24,6 +24,11 @@ export function NafSupport({ staff = false }: { staff?: boolean }) {
     if (error) throw error;
     return data ?? [];
   } });
+  const requesterNames = useQuery({ queryKey: ["naf-requester-names"], enabled: staff && !!cases.data?.length, queryFn: async () => {
+    const { data, error } = await supabase.rpc("get_naf_requester_names");
+    if (error) throw error;
+    return new Map((data ?? []).map((requester) => [requester.requester_id, requester.display_name]));
+  } });
   const activeId = selected;
   const messages = useQuery({ queryKey: ["naf-messages", activeId], enabled: !!activeId, queryFn: async () => {
     const { data, error } = await supabase.from("naf_messages").select("*").eq("case_id", activeId!).order("created_at");
@@ -94,7 +99,7 @@ export function NafSupport({ staff = false }: { staff?: boolean }) {
     {inlineError && <p role="alert" className="rounded-md border border-destructive/30 p-3 text-sm text-destructive">{inlineError}</p>}
     {cases.isError && <p role="alert" className="text-destructive">Não foi possível carregar os atendimentos. Confira se a migração do NAF foi aplicada.</p>}
     <div className="grid min-w-0 gap-4 md:grid-cols-[15rem_minmax(0,1fr)]">
-      <div className="max-h-80 space-y-1 overflow-y-auto" aria-label="Conversas do NAF">{cases.data?.map((item) => <button key={item.id} type="button" onClick={() => setSelected(item.id)} className={`block w-full rounded-md border p-3 text-left text-sm ${activeId === item.id ? "border-primary bg-primary-soft" : ""}`}><span className="block font-semibold">{item.topic}</span><span className="text-xs text-muted-foreground">{staff ? companies.data?.find((company) => company.owner_id === item.requester_id)?.name ?? `Conta ${item.requester_id.slice(0, 8)}` : new Date(item.created_at).toLocaleDateString("pt-BR")}</span></button>)}</div>
+      <div className="max-h-80 space-y-1 overflow-y-auto" aria-label="Conversas do NAF">{cases.data?.map((item) => <button key={item.id} type="button" onClick={() => setSelected(item.id)} className={`block w-full rounded-md border p-3 text-left text-sm ${activeId === item.id ? "border-primary bg-primary-soft" : ""}`}><span className="block font-semibold">{item.topic}</span><span className="text-xs text-muted-foreground">{staff ? companies.data?.find((company) => company.owner_id === item.requester_id)?.name ?? requesterNames.data?.get(item.requester_id) ?? `Conta ${item.requester_id.slice(0, 8)}` : new Date(item.created_at).toLocaleDateString("pt-BR")}</span></button>)}</div>
       <div className="min-w-0 space-y-3"><div data-lenis-prevent className="h-72 space-y-2 overflow-y-auto overscroll-contain rounded-md border bg-muted/30 p-3" aria-live="polite">{!activeId && <p className="text-sm text-muted-foreground">Escreva uma mensagem e envie para iniciar a conversa.</p>}{messages.data?.map((message) => <div key={message.id} className={`max-w-[90%] rounded-lg p-3 text-sm ${message.sender_id === userId ? "ml-auto bg-primary text-primary-foreground" : "bg-card"}`}><p className="whitespace-pre-wrap break-words">{message.body}</p><span className="mt-1 block text-xs opacity-70">{new Date(message.created_at).toLocaleString("pt-BR")}</span></div>)}</div><form onSubmit={(event) => { event.preventDefault(); void send(); }} className="flex gap-2"><label className="sr-only" htmlFor="naf-message">Mensagem</label><input id="naf-message" className="h-11 min-w-0 flex-1 rounded-md border bg-background px-3" value={body} onChange={(event) => setBody(event.target.value)} maxLength={2000} placeholder="Escreva sua dúvida ou resposta" /><Button type="submit" disabled={!canStart || !body.trim()}>Enviar</Button></form></div>
     </div>
   </section>;

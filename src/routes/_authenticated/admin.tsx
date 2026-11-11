@@ -180,7 +180,7 @@ function AdminPage() {
     return (
       <>
         <PageHeader
-          eyebrow="Administração"
+          eyebrow={role.data === "naf" ? "Núcleo de Apoio Contábil e Fiscal" : "Administração"}
           title={isJob ? (editing.item ? "Editar vaga" : "Nova vaga") : editing.item ? "Editar evento" : "Novo evento"}
           description="Sua conta de gestão pode publicar sem um cadastro de empresa ou professor."
         />
@@ -199,6 +199,7 @@ function AdminPage() {
               />
             ) : (
               <EventForm
+                admin
                 initial={editing.item}
                 submitLabel={editing.item ? "Salvar alterações" : "Publicar evento"}
                 successMessage={editing.item ? "Evento atualizado!" : "Evento publicado!"}
@@ -244,6 +245,8 @@ function AdminPage() {
             <PublicationFilters filter={publicationFilter} onFilter={setPublicationFilter} search={search} onSearch={setSearch} />
             {jobs.isLoading ? (
               <p className="text-muted-foreground">Carregando…</p>
+            ) : visibleJobs.length === 0 && jobList.length > 0 ? (
+              <EmptyState title="Nenhuma vaga encontrada" description="Nenhuma vaga corresponde à busca e ao status selecionados." action={<Button variant="outline" onClick={() => { setSearch(""); setPublicationFilter("all"); }}>Limpar filtros</Button>} />
             ) : visibleJobs.length === 0 ? (
               <EmptyState title="Nenhuma vaga publicada" description="Publique a primeira vaga da plataforma." action={<Button onClick={() => setEditing({ kind: "job" })}>Nova vaga</Button>} />
             ) : (
@@ -273,6 +276,8 @@ function AdminPage() {
             <PublicationFilters filter={publicationFilter} onFilter={setPublicationFilter} search={search} onSearch={setSearch} />
             {events.isLoading ? (
               <p className="text-muted-foreground">Carregando…</p>
+            ) : visibleEvents.length === 0 && eventList.length > 0 ? (
+              <EmptyState title="Nenhum evento encontrado" description="Nenhum evento corresponde à busca e ao status selecionados." action={<Button variant="outline" onClick={() => { setSearch(""); setPublicationFilter("all"); }}>Limpar filtros</Button>} />
             ) : visibleEvents.length === 0 ? (
               <EmptyState title="Nenhum evento publicado" description="Publique o primeiro evento da plataforma." action={<Button onClick={() => setEditing({ kind: "event" })}>Novo evento</Button>} />
             ) : (

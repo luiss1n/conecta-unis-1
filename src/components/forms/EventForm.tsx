@@ -6,8 +6,8 @@ import type { CareerEvent } from "@/types";
 import { Field, areaCls, inputCls } from "./fields";
 
 interface Props {
-  
   initial?: CareerEvent | undefined;
+  admin?: boolean;
   submitLabel: string;
   savingLabel?: string;
   successMessage: string;
@@ -23,7 +23,7 @@ function toLocalInput(iso: string) {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
-export function EventForm({ initial, submitLabel, savingLabel = "Salvando…", successMessage, onSubmit, onDone, onCancel }: Props) {
+export function EventForm({ initial, admin = false, submitLabel, savingLabel = "Salvando…", successMessage, onSubmit, onDone, onCancel }: Props) {
   const [saving, setSaving] = useState(false);
   const [draftReady, setDraftReady] = useState(false);
   const [draftStatus, setDraftStatus] = useState("Carregando rascunho da conta…");
@@ -40,7 +40,7 @@ export function EventForm({ initial, submitLabel, savingLabel = "Salvando…", s
     description: initial?.description ?? "",
   });
   useEffect(() => {
-    if (isEditing) { setDraftReady(true); return; }
+    if (isEditing || admin) { setDraftReady(true); return; }
     let active = true;
     void getPublicationDraft<typeof form>("event").then((draft) => {
       if (!active) return;
@@ -49,14 +49,14 @@ export function EventForm({ initial, submitLabel, savingLabel = "Salvando…", s
       setDraftReady(true);
     }).catch(() => { if (active) { setDraftStatus("Rascunho indisponível; você ainda pode preencher e publicar."); setDraftReady(true); } });
     return () => { active = false; };
-  }, [isEditing]);
+  }, [admin, isEditing]);
   useEffect(() => {
-    if (!draftReady || isEditing || submitSucceeded.current || !Object.values(form).some((value) => typeof value === "string" && value.trim().length > 0)) return;
+    if (!draftReady || isEditing || admin || submitSucceeded.current || !Object.values(form).some((value) => typeof value === "string" && value.trim().length > 0)) return;
     const timer = window.setTimeout(() => {
       void savePublicationDraft("event", form, new Date().toISOString()).then(() => setDraftStatus("Rascunho salvo na sua conta")).catch(() => setDraftStatus("Não foi possível sincronizar o rascunho"));
     }, 900);
     return () => window.clearTimeout(timer);
-  }, [draftReady, form, isEditing]);
+  }, [admin, draftReady, form, isEditing]);
   const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
     setForm((f) => ({ ...f, [k]: e.target.value }));
 
@@ -79,7 +79,7 @@ export function EventForm({ initial, submitLabel, savingLabel = "Salvando…", s
         description: form.description,
       });
       submitSucceeded.current = true;
-      if (!isEditing) {
+      if (!isEditing && !admin) {
         try { await deletePublicationDraft("event"); }
         catch { setDraftStatus("Evento publicado; o rascunho ainda pode aparecer em sua conta."); }
       }
@@ -124,7 +124,7 @@ export function EventForm({ initial, submitLabel, savingLabel = "Salvando…", s
       <Field label="Descrição completa">
         <textarea className={areaCls} rows={4} maxLength={10000} value={form.description} onChange={set("description")} />
       </Field>
-      {!isEditing && <p className="text-xs text-muted-foreground" role="status" aria-live="polite">{draftStatus}</p>}
+      {!isEditing && !admin && <p className="text-xs text-muted-foreground" role="status" aria-live="polite">{draftStatus}</p>}
       <div className="flex flex-col-reverse gap-3 sm:flex-row">
         {onCancel && <Button type="button" variant="outline" size="lg" className="sm:flex-1" onClick={onCancel} disabled={saving}>Cancelar</Button>}
         <Button type="submit" size="lg" className="sm:flex-1" disabled={saving || (!isEditing && !draftReady)}>{saving ? savingLabel : submitLabel}</Button>

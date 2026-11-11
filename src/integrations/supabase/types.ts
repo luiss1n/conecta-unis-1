@@ -475,6 +475,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_naf_requester_names: { Args: Record<PropertyKey, never>; Returns: { requester_id: string; display_name: string }[] }
       record_job_view: { Args: { _job_slug: string; _viewer_id: string }; Returns: undefined }
       get_naf_job_analytics: { Args: { _days: number }; Returns: Json }
       get_platform_stats: { Args: Record<PropertyKey, never>; Returns: { users: number; jobs: number; companies: number; events: number } }
