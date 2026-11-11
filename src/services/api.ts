@@ -177,6 +177,12 @@ export async function markAllNotificationsRead(): Promise<void> {
   if (error) throwSupabaseError("Não foi possível atualizar as notificações", error);
 }
 
+export async function deleteNotification(id: string): Promise<void> {
+  const user = await requireUser();
+  const { error } = await supabase.from("notifications").delete().eq("id", id).eq("recipient_id", user.id);
+  if (error) throwSupabaseError("Não foi possível remover a notificação", error);
+}
+
 export async function submitPublicationReport(
   kind: "job" | "event",
   targetRef: string,

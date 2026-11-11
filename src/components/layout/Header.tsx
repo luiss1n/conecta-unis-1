@@ -1,6 +1,7 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowUpRight, Bell, CheckCheck, Menu, Plus, ShieldCheck } from "lucide-react";
+import { ArrowUpRight, Bell, CheckCheck, Menu, Plus, ShieldCheck, X } from "lucide-react";
+import { toast } from "sonner";
 import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -9,6 +10,7 @@ import { useSession } from "@/hooks/use-session";
 import { supabase } from "@/integrations/supabase/client";
 import {
   getMyNotifications,
+  deleteNotification,
   getMyRole,
   markAllNotificationsRead,
   markNotificationRead,
@@ -101,6 +103,14 @@ export function Header() {
     await markAllNotificationsRead();
     await qc.invalidateQueries({ queryKey: ["my-notifications", session?.user.id] });
   }
+  async function removeNotification(id: string) {
+    try {
+      await deleteNotification(id);
+      await qc.invalidateQueries({ queryKey: ["my-notifications", session?.user.id] });
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Não foi possível remover a notificação.");
+    }
+  }
   async function signOut() {
     await qc.cancelQueries();
     qc.clear();
@@ -170,14 +180,14 @@ export function Header() {
                     </Button>
                   )}
                 </div>
-                <ul className="max-h-[min(24rem,65vh)] divide-y overflow-y-auto">
+                <ul data-lenis-prevent className="max-h-[min(24rem,65dvh)] divide-y overflow-y-auto overscroll-contain touch-pan-y">
                   {notifications.length === 0 && (
                     <li className="px-4 py-8 text-center text-sm text-muted-foreground">
                       Você ainda não tem notificações.
                     </li>
                   )}
                   {notifications.map((n) => (
-                    <li key={n.id}>
+                    <li key={n.id} className="relative">
                       <a
                         href={n.target_path}
                         onClick={async (event) => {
@@ -185,7 +195,7 @@ export function Header() {
                           if (!n.read_at) await markAsRead(n.id);
                           window.location.assign(n.target_path);
                         }}
-                        className={`group flex items-start gap-3 px-4 py-3.5 transition-colors hover:bg-muted focus-visible:outline-2 focus-visible:outline-ring ${n.read_at ? "" : "bg-primary-soft/60"}`}
+                        className={`group flex items-start gap-3 py-3.5 pl-4 pr-14 transition-colors hover:bg-muted focus-visible:outline-2 focus-visible:outline-ring ${n.read_at ? "" : "bg-primary-soft/60"}`}
                       >
                         <span
                           className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${n.read_at ? "bg-transparent" : "bg-brand-purple"}`}
@@ -202,6 +212,7 @@ export function Header() {
                           aria-hidden="true"
                         />
                       </a>
+                      <button type="button" aria-label={`Remover notificação: ${n.title}`} title="Remover notificação" onClick={() => void removeNotification(n.id)} className="absolute right-2 top-2 flex h-10 w-10 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring"><X className="h-4 w-4" /></button>
                     </li>
                   ))}
                 </ul>
