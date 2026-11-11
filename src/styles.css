@@ -151,6 +151,9 @@
 }
 
 @layer base {
+  :where([role="dialog"], [data-lenis-prevent], .overflow-y-auto, .overflow-auto) {
+    overscroll-behavior: contain;
+  }
   * {
     border-color: var(--color-border);
   }

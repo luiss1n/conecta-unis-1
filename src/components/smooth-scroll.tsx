@@ -14,6 +14,8 @@ export function SmoothScroll({ children }: { children: ReactNode }) {
       lerp: 0.1,
       smoothWheel: true,
       syncTouch: false,
+      allowNestedScroll: true,
+      prevent: (node) => node.getAttribute("role") === "dialog" || node.hasAttribute("data-lenis-prevent"),
     });
 
     let raf = 0;

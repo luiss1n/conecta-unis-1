@@ -43,7 +43,7 @@ import type { CareerEvent, Job } from "@/types";
 export const Route = createFileRoute("/_authenticated/admin")({
   head: () => ({
     meta: [
-      { title: "Painel do administrador — CONECTA UNIS" },
+      { title: "Painel de gestão — CONECTA UNIS" },
       { name: "robots", content: "noindex" },
     ],
   }),
@@ -145,7 +145,7 @@ function AdminPage() {
   if (!isAdmin) {
     return (
       <>
-        <PageHeader eyebrow="Administração" title="Acesso restrito" description="Esta área é exclusiva para administradores da plataforma." />
+        <PageHeader eyebrow="Gestão" title="Acesso restrito" description="Esta área é exclusiva para administradores e integrantes do NAF." />
         <div className="container-page py-10">
           <Button asChild size="lg"><Link to="/">Voltar ao início</Link></Button>
         </div>
@@ -182,7 +182,7 @@ function AdminPage() {
         <PageHeader
           eyebrow="Administração"
           title={isJob ? (editing.item ? "Editar vaga" : "Nova vaga") : editing.item ? "Editar evento" : "Novo evento"}
-          description="Como administrador, você não precisa de uma conta de empresa ou de professor para publicar."
+          description="Sua conta de gestão pode publicar sem um cadastro de empresa ou professor."
         />
         <div className="container-page max-w-2xl py-10">
           <section className="rounded-xl border bg-card p-6 shadow-card">
@@ -215,7 +215,7 @@ function AdminPage() {
 
   return (
     <>
-      <PageHeader eyebrow="Administração" title="Painel do administrador" description="Crie, edite e exclua vagas e eventos da plataforma.">
+      <PageHeader eyebrow={role.data === "naf" ? "Núcleo de Apoio Contábil e Fiscal" : "Administração"} title={role.data === "naf" ? "Painel do NAF" : "Painel do administrador"} description={role.data === "naf" ? "Atenda empresas e alunos, acompanhe os relatórios e gerencie publicações." : "Crie, edite e exclua vagas e eventos da plataforma."}>
         <div className="flex flex-wrap gap-3">
           <Button onClick={() => { setTab("vagas"); setEditing({ kind: "job" }); }}><Plus className="h-4 w-4" /> Nova vaga</Button>
           <Button variant="outline" onClick={() => { setTab("eventos"); setEditing({ kind: "event" }); }}><CalendarDays className="h-4 w-4" /> Novo evento</Button>
@@ -308,7 +308,7 @@ function AdminPage() {
         </Tabs>
 
         <p className="mt-8 flex items-center gap-2 text-xs text-muted-foreground">
-          <ShieldCheck className="h-4 w-4" /> As permissões de administrador são validadas pelo banco de dados, não apenas por esta tela.
+          <ShieldCheck className="h-4 w-4" /> As permissões desta conta são validadas pelo banco de dados.
         </p>
       </div>
     </>
