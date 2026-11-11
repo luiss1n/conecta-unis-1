@@ -1,4 +1,4 @@
-import { createFileRoute, Link, redirect } from "@tanstack/react-router";
+import { createFileRoute, Link, redirect, useRouter } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { Briefcase, CalendarDays, CheckCircle2 } from "lucide-react";
 import { useState } from "react";
@@ -29,6 +29,7 @@ export const Route = createFileRoute("/_authenticated/publicar")({
 });
 
 function PublishPage() {
+  const router = useRouter();
   const { data, isLoading } = useQuery({ queryKey: ["my-profile"], queryFn: getMyProfile });
   const [done, setDone] = useState(false);
   const [publicationType, setPublicationType] = useState<"job" | "event">("job");
@@ -116,9 +117,9 @@ function PublishPage() {
               </div>
             </div>
             {isPublishingJob ? (
-              <JobForm submitLabel="Publicar vaga" savingLabel="Publicando…" successMessage="Vaga publicada!" onSubmit={createJob} onDone={() => setDone(true)} />
+              <JobForm submitLabel="Publicar vaga" savingLabel="Publicando…" successMessage="Vaga publicada!" onSubmit={createJob} onDone={() => { setDone(true); void router.invalidate(); }} />
             ) : (
-              <EventForm submitLabel="Publicar evento" savingLabel="Publicando…" successMessage="Evento publicado!" onSubmit={createEvent} onDone={() => setDone(true)} />
+              <EventForm submitLabel="Publicar evento" savingLabel="Publicando…" successMessage="Evento publicado!" onSubmit={createEvent} onDone={() => { setDone(true); void router.invalidate(); }} />
             )}
           </section>
         )}

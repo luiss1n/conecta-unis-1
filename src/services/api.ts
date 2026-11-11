@@ -831,8 +831,10 @@ export async function createJob(values: NewJobValues) {
   }
   const { error } = await supabase
     .from("jobs")
-    .insert({ owner_id: user.id, ...publisher, ...jobPayload(values) });
-  if (error) throwSupabaseError("Não foi possível publicar a vaga", error);
+    .insert({ owner_id: user.id, ...publisher, ...jobPayload(values) })
+    .select("slug")
+    .single();
+  if (error) throwSupabaseError("Não foi possível confirmar a publicação da vaga", error);
 }
 
 export interface NewEventValues {
@@ -863,8 +865,10 @@ export async function createEvent(values: NewEventValues) {
   const user = await requireUser();
   const { error } = await supabase
     .from("events")
-    .insert({ owner_id: user.id, ...eventPayload(values) });
-  if (error) throwSupabaseError("Não foi possível publicar o evento", error);
+    .insert({ owner_id: user.id, ...eventPayload(values) })
+    .select("id")
+    .single();
+  if (error) throwSupabaseError("Não foi possível confirmar a publicação do evento", error);
 }
 
 export interface AdminJobValues extends NewJobValues {

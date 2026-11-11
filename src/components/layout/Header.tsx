@@ -61,7 +61,7 @@ export function Logo({ dark = false }: { dark?: boolean }) {
       <img
         src={wordmarkLogo}
         alt="Conecta Unis"
-        className={`h-10 w-[120px] shrink-0 object-contain ${dark ? "brightness-0 invert" : ""}`}
+        className={`h-8 w-24 shrink-0 object-contain sm:h-10 sm:w-[120px] ${dark ? "brightness-0 invert" : ""}`}
         width={120}
         height={40}
       />
@@ -110,7 +110,7 @@ export function Header() {
 
   return (
     <header className="sticky top-0 z-40 border-b bg-surface/90 backdrop-blur">
-      <div className="container-page flex h-16 items-center gap-4">
+      <div className="container-page flex h-16 items-center gap-2 sm:gap-4">
         <Logo />
         <nav aria-label="Principal" className="ml-6 hidden items-center gap-1 lg:flex">
           {nav.map((n) => (
@@ -135,7 +135,7 @@ export function Header() {
                   aria-label={
                     unreadCount > 0 ? `Notificações, ${unreadCount} não lidas` : "Notificações"
                   }
-                  className="relative"
+                  className="relative min-h-11 min-w-11"
                 >
                   <Bell className="h-5 w-5" />
                   {unreadCount > 0 && (
@@ -230,10 +230,10 @@ export function Header() {
                   <Link to="/alertas">Notificações</Link>
                 </Button>
               )}
-              <Button asChild variant="outline" size="sm">
+              <Button asChild variant="outline" size="sm" className="hidden lg:inline-flex">
                 <Link to="/perfil">Meu perfil</Link>
               </Button>
-              <Button variant="ghost" size="sm" onClick={signOut}>
+              <Button variant="ghost" size="sm" className="hidden lg:inline-flex" onClick={signOut}>
                 Sair
               </Button>
             </>
@@ -244,7 +244,7 @@ export function Header() {
           )}
           <Sheet open={open} onOpenChange={setOpen}>
             <SheetTrigger asChild>
-              <Button variant="ghost" size="icon" className="lg:hidden" aria-label="Abrir menu">
+              <Button variant="ghost" size="icon" className="min-h-11 min-w-11 lg:hidden" aria-label="Abrir menu">
                 <Menu className="h-5 w-5" />
               </Button>
             </SheetTrigger>
@@ -283,6 +283,15 @@ export function Header() {
                     {item.label}
                   </Link>
                 ))}
+                {session && (
+                  <button
+                    type="button"
+                    onClick={() => { setOpen(false); void signOut(); }}
+                    className="min-h-11 rounded-md px-3 py-3 text-left font-medium hover:bg-muted"
+                  >
+                    Sair
+                  </button>
+                )}
                 {session && role && (
                   <Link
                     to="/alertas"
