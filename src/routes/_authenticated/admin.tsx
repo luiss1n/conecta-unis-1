@@ -1,11 +1,12 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { CalendarDays, Flag, Plus, Search, ShieldCheck, Trash2 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { EmptyState } from "@/components/common/EmptyState";
 import { PageHeader } from "@/components/common/PageHeader";
 import { NafDashboard } from "@/components/admin/NafDashboard";
+import { NafSupport } from "@/components/admin/NafSupport";
 import { EventForm } from "@/components/forms/EventForm";
 import { JobForm } from "@/components/forms/JobForm";
 import {
@@ -87,7 +88,7 @@ function ConfirmDelete({ title, onConfirm }: { title: string; onConfirm: () => P
 function AdminPage() {
   const qc = useQueryClient();
   const role = useQuery({ queryKey: ["my-role"], queryFn: getMyRole });
-  const isAdmin = role.data === "admin";
+  const isAdmin = role.data === "admin" || role.data === "naf";
   const jobs = useQuery({ queryKey: ["admin-jobs"], queryFn: () => getJobs({ includeClosed: true }), enabled: isAdmin });
   const events = useQuery({ queryKey: ["admin-events"], queryFn: () => getEvents(), enabled: isAdmin });
   const companies = useQuery({ queryKey: ["admin-companies"], queryFn: getCompanies, enabled: isAdmin });
@@ -95,6 +96,7 @@ function AdminPage() {
   const reports = useQuery({ queryKey: ["admin-publication-reports"], queryFn: getPublicationReports, enabled: isAdmin });
   const [editing, setEditing] = useState<Editing>(null);
   const [tab, setTab] = useState("vagas");
+  useEffect(() => { if (role.data === "naf") setTab("atendimento"); }, [role.data]);
   const [publicationFilter, setPublicationFilter] = useState<"all" | "active" | "closed" | "hidden">("all");
   const [search, setSearch] = useState("");
 
@@ -235,6 +237,7 @@ function AdminPage() {
             <TabsTrigger value="eventos">Eventos ({eventList.length})</TabsTrigger>
             <TabsTrigger value="denuncias"><Flag className="mr-1 h-4 w-4" />Denúncias ({(reports.data ?? []).filter((report) => report.status === "pending").length})</TabsTrigger>
             <TabsTrigger value="naf">NAF · Relatórios</TabsTrigger>
+            <TabsTrigger value="atendimento">NAF · Atendimento</TabsTrigger>
           </TabsList>
 
           <TabsContent value="vagas" className="mt-5">
@@ -301,6 +304,7 @@ function AdminPage() {
             {reports.isLoading ? <p className="text-sm text-muted-foreground">Carregando denúncias…</p> : reports.isError ? <p role="alert" className="text-sm text-destructive">Não foi possível carregar as denúncias. Confira se a migration de moderação foi aplicada.</p> : reports.data?.length ? <ul className="space-y-3">{reports.data.map((report) => { const hidden = report.target_kind === "job" ? jobList.find((job) => job.slug === report.target_ref)?.isHidden : eventList.find((event) => event.id === report.target_ref)?.isHidden; return <li key={report.id} className="rounded-xl border bg-card p-4"><div className="flex flex-wrap items-start justify-between gap-3"><div className="min-w-0"><p className="break-all font-semibold">{report.target_kind === "job" ? "Vaga" : "Evento"} · {report.target_ref}</p><p className="mt-1 whitespace-pre-wrap text-sm text-muted-foreground">{report.reason}</p><p className="mt-2 text-xs text-muted-foreground">{new Date(report.created_at).toLocaleString("pt-BR")} · {report.status === "pending" ? "Pendente" : report.status === "resolved" ? "Analisada" : "Arquivada"}</p></div><div className="flex flex-wrap gap-2">{report.target_kind === "job" ? <><Button asChild size="sm" variant="outline" className="min-h-11"><Link to="/vagas/$slug" params={{ slug: report.target_ref }}>Abrir vaga</Link></Button><Button size="sm" variant="outline" className="min-h-11" onClick={() => void changeVisibility("job", report.target_ref, !hidden)}>{hidden ? "Restaurar" : "Ocultar"}</Button></> : <><Button asChild size="sm" variant="outline" className="min-h-11"><Link to="/eventos/$id" params={{ id: report.target_ref }}>Abrir evento</Link></Button><Button size="sm" variant="outline" className="min-h-11" onClick={() => void changeVisibility("event", report.target_ref, !hidden)}>{hidden ? "Restaurar" : "Ocultar"}</Button></>}{report.status === "pending" && <><Button size="sm" className="min-h-11" onClick={() => void reviewReport(report.id, "resolved")}>Marcar analisada</Button><Button size="sm" variant="outline" className="min-h-11" onClick={() => void reviewReport(report.id, "dismissed")}>Arquivar</Button></>}</div></div></li>; })}</ul> : <EmptyState title="Nenhuma denúncia recebida" description="As denúncias enviadas pelos usuários aparecerão aqui." />}
           </TabsContent>
           <TabsContent value="naf" className="mt-5"><NafDashboard /></TabsContent>
+          <TabsContent value="atendimento" className="mt-5"><NafSupport staff /></TabsContent>
         </Tabs>
 
         <p className="mt-8 flex items-center gap-2 text-xs text-muted-foreground">

@@ -30,7 +30,7 @@ function ApplicationsInbox() {
   const roleQuery = useQuery({ queryKey: ["my-role"], queryFn: getMyRole });
   const role = roleQuery.data;
   const canApply = role === "visitor" || role === "professor";
-  const canReceive = role === "company" || role === "professor" || role === "admin";
+  const canReceive = role === "company" || role === "professor" || role === "admin" || role === "naf";
   const received = useQuery({ queryKey: ["received-applications"], queryFn: getReceivedApplications, enabled: canReceive, refetchInterval: 10000 });
   const sent = useQuery({ queryKey: ["my-applications"], queryFn: getMyApplications, enabled: canApply, refetchInterval: 10000 });
   const events = useQuery({ queryKey: ["my-event-registrations"], queryFn: getMyEventRegistrations, enabled: canApply });

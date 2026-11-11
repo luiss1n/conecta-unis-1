@@ -16,7 +16,7 @@ export const Route = createFileRoute("/_authenticated/publicar")({
     const { data, error } = await supabase.from("user_roles").select("role").eq("user_id", auth.user.id).maybeSingle();
     if (error) throw error;
     if (data?.role === "visitor") throw redirect({ to: "/candidaturas" });
-    if (data?.role === "admin") throw redirect({ to: "/admin" });
+    if (data?.role === "admin" || data?.role === "naf") throw redirect({ to: "/admin" });
     if (!data?.role) throw redirect({ to: "/cadastro" });
   },
   head: () => ({
@@ -60,7 +60,7 @@ function PublishPage() {
     );
   }
 
-  if (role === "admin") {
+  if (role === "admin" || role === "naf") {
     return (
       <>
         <PageHeader eyebrow="Publicar" title="Use o painel do administrador" description="Como administrador, você cria e gerencia vagas e eventos pelo painel." />

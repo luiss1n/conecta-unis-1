@@ -45,6 +45,7 @@ export const profileKindLabels = {
   visitor: "Aluno",
   professor: "Professor",
   admin: "Diretor / administrador",
+  naf: "NAF",
 };
 export type ProfileFileKind = "avatar" | "banner" | "resume";
 

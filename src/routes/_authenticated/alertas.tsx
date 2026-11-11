@@ -4,8 +4,9 @@ import { useState, type FormEvent } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/common/PageHeader";
+import { NafSupport } from "@/components/admin/NafSupport";
 import { supabase } from "@/integrations/supabase/client";
-import { getRegionalCities, type RegionalCity } from "@/services/api";
+import { getMyRole, getRegionalCities, type RegionalCity } from "@/services/api";
 
 const categories = ["Administração", "Contabilidade", "Tecnologia", "Saúde", "Direito", "Comércio", "Atendimento"];
 
@@ -95,10 +96,12 @@ function AlertsForm({ userId, isStudent, preferences, notifications, cities }: {
 
 function JobAlertsPage() {
   const { data, isLoading, isError } = useQuery({ queryKey: ["job-alert-preferences"], queryFn: loadPreferences });
+  const role = useQuery({ queryKey: ["my-role"], queryFn: getMyRole });
   return <>
     <PageHeader eyebrow="Preferências da conta" title="Alertas e notificações" description="Escolha quais avisos você quer receber da plataforma." />
     <div className="container-page max-w-3xl py-8">
       {isLoading ? <p className="text-sm text-muted-foreground">Carregando preferências…</p> : isError || !data ? <div role="alert" className="rounded-lg border p-5"><p>Não foi possível carregar as preferências. Confira se as migrations de alertas já foram aplicadas no Supabase.</p></div> : <AlertsForm key={data.userId} userId={data.userId} isStudent={data.isStudent} preferences={data.preferences} notifications={data.notifications} cities={data.cities} />}
+      {(role.data === "company" || role.data === "visitor") && <div className="mt-8"><NafSupport /></div>}
     </div>
   </>;
 }

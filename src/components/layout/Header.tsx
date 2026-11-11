@@ -25,23 +25,24 @@ const nav = [
   { to: "/eventos", label: "Eventos" },
 ] as const;
 
-function accountNav(role: string | undefined) {
+function accountNav(role: string | null | undefined) {
   if (role === "company" || role === "professor") {
     return [
       { to: "/publicar" as const, label: "Publicar vaga" },
       { to: "/candidaturas" as const, label: "Candidaturas" },
       { to: "/calendario" as const, label: "Calendário" },
+      { to: "/alertas" as const, label: "Atendimento NAF" },
     ];
   }
   if (role === "visitor") {
     return [
       { to: "/candidaturas" as const, label: "Minhas candidaturas" },
       { to: "/vagas-salvas" as const, label: "Vagas salvas" },
-      { to: "/alertas" as const, label: "Alertas" },
+      { to: "/alertas" as const, label: "Alertas e NAF" },
       { to: "/calendario" as const, label: "Calendário" },
     ];
   }
-  if (role === "admin") return [{ to: "/admin" as const, label: "Painel admin" }];
+  if (role === "admin" || role === "naf") return [{ to: "/admin" as const, label: role === "naf" ? "Painel NAF" : "Painel admin" }];
   if (role === undefined) return [];
   return [{ to: "/cadastro" as const, label: "Completar cadastro" }];
 }
@@ -87,7 +88,7 @@ export function Header() {
     enabled: !!session,
     refetchInterval: 30_000,
   });
-  const isAdmin = role === "admin";
+  const isAdmin = role === "admin" || role === "naf";
   const isStudent = role === "visitor";
   const canPublish = role === "company" || role === "professor";
   const roleLinks = accountNav(role);

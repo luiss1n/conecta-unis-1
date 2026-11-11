@@ -179,8 +179,10 @@ export async function markAllNotificationsRead(): Promise<void> {
 
 export async function deleteNotification(id: string): Promise<void> {
   const user = await requireUser();
-  const { error } = await supabase.from("notifications").delete().eq("id", id).eq("recipient_id", user.id);
+  const { data, error } = await supabase.from("notifications").delete().eq("id", id).eq("recipient_id", user.id).select("id");
+  if (error?.code === "42501") throw new Error("A exclusão de notificações ainda não foi habilitada no banco. Aplique a migração 0022.");
   if (error) throwSupabaseError("Não foi possível remover a notificação", error);
+  if (!data?.length) throw new Error("A notificação não foi removida. Confira se a migração 0022 foi aplicada ao banco.");
 }
 
 export async function submitPublicationReport(
@@ -203,7 +205,7 @@ export async function submitPublicationReport(
 export async function getPublicationReports(): Promise<PublicationReport[]> {
   await requireUser();
   const role = await getMyRole();
-  if (role !== "admin") throw new Error("Acesso restrito à administração.");
+  if (role !== "admin" && role !== "naf") throw new Error("Acesso restrito à administração.");
   const { data, error } = await supabase
     .from("publication_reports")
     .select("*")
@@ -972,7 +974,7 @@ export async function setPublicationHidden(
   targetRef: string,
   hidden: boolean,
 ): Promise<void> {
-  if ((await getMyRole()) !== "admin") throw new Error("Acesso restrito à administração.");
+  if (!(["admin", "naf"] as const).includes((await getMyRole()) as "admin" | "naf")) throw new Error("Acesso restrito à administração.");
   const result =
     kind === "job"
       ? await supabase

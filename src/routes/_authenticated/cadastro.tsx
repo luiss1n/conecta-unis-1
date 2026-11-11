@@ -85,6 +85,7 @@ const company = base.extend({
     .refine((v) => v.length === 14, "Informe 14 números no CNPJ."),
   sector: z.string().trim().min(1, "Informe o setor").max(100),
   website: z.string().trim().max(300),
+  business_size: z.enum(["mei", "microempresa", "pequena", "media", "grande", "outro"]),
 });
 const professor = base.extend({
   kind: z.literal("professor"),
@@ -98,22 +99,24 @@ async function loadRegistration() {
   const { data: u } = await supabase.auth.getUser();
   if (!u.user) throw new Error("Entre na sua conta para continuar");
   const uid = u.user.id;
-  const [p, r, cd, co, pd] = await Promise.all([
+  const [p, r, cd, co, pd, sb] = await Promise.all([
     supabase.from("profiles").select("*").eq("id", uid).maybeSingle(),
     supabase.from("user_roles").select("role").eq("user_id", uid).maybeSingle(),
     supabase.from("company_details").select("*").eq("user_id", uid).maybeSingle(),
     supabase.from("companies").select("name, sector").eq("owner_id", uid).maybeSingle(),
     supabase.from("professor_details").select("*").eq("user_id", uid).maybeSingle(),
+    supabase.from("student_businesses").select("business_size").eq("user_id", uid).maybeSingle(),
   ]);
   return {
     email: u.user.email ?? "",
-    role: (r.data?.role ?? null) as Kind | "admin" | null,
+    role: (r.data?.role ?? null) as Kind | "admin" | "naf" | null,
     values: {
       ...p.data,
       ...cd.data,
       company_name: co.data?.name,
       sector: co.data?.sector,
       ...pd.data,
+      business_size: cd.data?.business_size === "nao_informado" ? undefined : (cd.data?.business_size ?? sb.data?.business_size),
     } as Record<string, string | undefined>,
   };
 }
@@ -239,18 +242,18 @@ function Registration() {
   const [resumeFile, setResumeFile] = useState<File | null>(null);
   const [resumeReady, setResumeReady] = useState(false);
   useEffect(() => {
-    if (data?.role && data.role !== "admin") setKind(data.role);
+    if (data?.role && data.role !== "admin" && data.role !== "naf") setKind(data.role);
   }, [data?.role]);
 
   if (isLoading || !data)
     return <p className="container-page py-16 text-muted-foreground">Carregando…</p>;
-  if (data.role === "admin") {
+  if (data.role === "admin" || data.role === "naf") {
     return (
       <div className="container-page max-w-3xl py-12">
-        <h1 className="font-display text-3xl font-extrabold">Conta de administrador</h1>
+        <h1 className="font-display text-3xl font-extrabold">Conta {data.role === "naf" ? "do NAF" : "de administrador"}</h1>
         <p className="mt-1 text-sm text-muted-foreground">Conta: {data.email}</p>
         <p className="mt-6 text-muted-foreground">
-          Contas de administrador não precisam de cadastro de empresa ou professor.
+          Esta conta tem acesso ao painel administrativo e ao atendimento do NAF.
         </p>
         <Button asChild className="mt-6">
           <Link to="/admin">Ir para o painel</Link>
@@ -266,20 +269,21 @@ function Registration() {
 
   async function submit(e: FormEvent<HTMLFormElement>): Promise<void> {
     e.preventDefault();
+    if (!kind) return;
     const raw = { ...Object.fromEntries(new FormData(e.currentTarget)), kind };
     const parsed = (
       kind === "company"
         ? company
         : kind === "professor"
           ? professor
-          : base.extend({ kind: z.literal("visitor") })
+          : base.extend({ kind: z.literal("visitor"), business_size: z.enum(["", "mei", "microempresa", "pequena", "media", "grande", "outro"]) })
     ).safeParse(raw);
     if (!parsed.success) return void toast.error(parsed.error.issues[0]?.message);
     if (kind === "professor" && !canRegisterAsProfessor)
       return void toast.error(
         "Para cadastrar perfil de professor, use um e-mail institucional confirmado @professor.unis.edu.br.",
       );
-    if (kind === "visitor" && !d.resume_path && !resumeFile)
+    if (kind === "visitor" && !d["resume_path"] && !resumeFile)
       return void toast.error("Adicione seu currículo em PDF para concluir o perfil de aluno.");
     const registrationPayload =
       kind === "visitor" && resumeFile
@@ -369,9 +373,9 @@ function Registration() {
           <section className="grid gap-4 sm:grid-cols-2">
             <h2 className="font-bold sm:col-span-2">Seus dados</h2>
             <Field name="display_name" label="Nome completo" d={d} required />
-            <UsernameField defaultValue={d.username} />
+            <UsernameField defaultValue={d["username"]} />
             <Field name="city" label="Cidade" d={d} required />
-            <PhoneField defaultValue={d.phone} />
+            <PhoneField defaultValue={d["phone"]} />
             <div className="sm:col-span-2">
               <Field
                 name="bio"
@@ -386,8 +390,11 @@ function Registration() {
               <h2 className="font-bold sm:col-span-2">Dados da empresa</h2>
               <Field name="company_name" label="Nome da empresa" d={d} required />
               <Field name="legal_name" label="Razão social" d={d} required />
-              <CnpjField defaultValue={d.cnpj} />
+              <CnpjField defaultValue={d["cnpj"]} />
               <Field name="sector" label="Setor" d={d} required />
+              <label className="flex flex-col gap-1.5 text-sm font-medium">Porte da empresa
+                <select name="business_size" defaultValue={d["business_size"] ?? ""} required className="h-11 rounded-md border bg-background px-3"><option value="" disabled>Selecione o porte</option><option value="mei">MEI</option><option value="microempresa">Microempresa</option><option value="pequena">Pequena empresa</option><option value="media">Média empresa</option><option value="grande">Grande empresa</option><option value="outro">Outro</option></select>
+              </label>
               <div className="sm:col-span-2">
                 <Field name="website" label="Site" d={d} placeholder="https://" />
               </div>
@@ -407,7 +414,10 @@ function Registration() {
               <Field name="subjects" label="Disciplinas" d={d} required />
             </section>
           ) : (
-            <section className="space-y-2 rounded-lg border border-primary/20 bg-primary-soft/50 p-4">
+            <section className="space-y-4 rounded-lg border border-primary/20 bg-primary-soft/50 p-4">
+              <label className="flex flex-col gap-1.5 text-sm font-medium">Você tem empresa ou MEI? (opcional)
+                <select name="business_size" defaultValue={d["business_size"] ?? ""} className="h-11 rounded-md border bg-background px-3"><option value="">Não informar</option><option value="mei">Sim, MEI</option><option value="microempresa">Sim, microempresa</option><option value="pequena">Sim, pequena empresa</option><option value="media">Sim, média empresa</option><option value="grande">Sim, grande empresa</option><option value="outro">Sim, outro tipo</option></select>
+              </label>
               <h2 className="font-bold">Currículo obrigatório</h2>
               <p className="text-sm text-muted-foreground">
                 Envie seu currículo em PDF para concluir o perfil. Você poderá atualizar o arquivo
@@ -418,13 +428,13 @@ function Registration() {
                 id="onboarding-resume"
                 type="file"
                 accept="application/pdf,.pdf"
-                required={!d.resume_path}
+                required={!d["resume_path"]}
                 onChange={(event) => {
                   setResumeFile(event.target.files?.[0] ?? null);
                   setResumeReady(false);
                 }}
               />
-              {d.resume_path && !resumeFile && (
+              {d["resume_path"] && !resumeFile && (
                 <p className="text-sm text-success">Já existe um currículo salvo na sua conta.</p>
               )}
               {resumeFile && (

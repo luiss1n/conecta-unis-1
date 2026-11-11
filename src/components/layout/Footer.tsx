@@ -9,7 +9,7 @@ export function Footer() {
   const year = new Date().getFullYear();
   const { session } = useSession();
   const { data: role } = useQuery({ queryKey: ["my-role"], queryFn: getMyRole, enabled: !!session });
-  const canSeeBusinessArea = !session || role === "company" || role === "professor" || role === "admin";
+  const canSeeBusinessArea = !session || role === "company" || role === "professor" || role === "admin" || role === "naf";
   return (
     <footer className="mt-20 border-t border-footer-border bg-footer text-footer-foreground">
       <div className="container-page grid gap-10 py-12 md:grid-cols-[2fr_1fr_1fr_1.2fr]">

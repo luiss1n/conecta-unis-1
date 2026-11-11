@@ -148,6 +148,20 @@
       "when": 1794403600000,
       "tag": "0022_delete_own_notifications",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1794407200000,
+      "tag": "0023_naf_role_and_support",
+      "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1794410800000,
+      "tag": "0024_naf_support",
+      "breakpoints": true
     }
   ]
 }

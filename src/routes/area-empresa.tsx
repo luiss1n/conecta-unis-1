@@ -14,7 +14,7 @@ export const Route = createFileRoute("/area-empresa")({
     const { data, error } = await supabase.from("user_roles").select("role").eq("user_id", auth.user.id).maybeSingle();
     if (error) throw error;
     if (data?.role === "visitor") throw redirect({ to: "/candidaturas" });
-    if (data?.role === "admin") throw redirect({ to: "/admin" });
+    if (data?.role === "admin" || data?.role === "naf") throw redirect({ to: "/admin" });
     if (data?.role === "company" || data?.role === "professor") throw redirect({ to: "/publicar" });
     throw redirect({ to: "/cadastro" });
   },

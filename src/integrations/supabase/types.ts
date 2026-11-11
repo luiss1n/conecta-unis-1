@@ -12,6 +12,24 @@ export type Database = {
   }
   public: {
     Tables: {
+      student_businesses: {
+        Row: { user_id: string; business_size: string; updated_at: string }
+        Insert: { user_id: string; business_size: string; updated_at?: string }
+        Update: { user_id?: string; business_size?: string; updated_at?: string }
+        Relationships: []
+      }
+      naf_cases: {
+        Row: { id: string; requester_id: string; topic: string; created_at: string }
+        Insert: { id?: string; requester_id: string; topic: string; created_at?: string }
+        Update: { id?: string; requester_id?: string; topic?: string; created_at?: string }
+        Relationships: []
+      }
+      naf_messages: {
+        Row: { id: string; case_id: string; sender_id: string; body: string; created_at: string }
+        Insert: { id?: string; case_id: string; sender_id: string; body: string; created_at?: string }
+        Update: { id?: string; case_id?: string; sender_id?: string; body?: string; created_at?: string }
+        Relationships: []
+      }
       application_next_steps: {
         Row: { application_id: string; applicant_id: string; checklist: Json; reflection: string; updated_at: string }
         Insert: { application_id: string; applicant_id: string; checklist?: Json; reflection?: string; updated_at?: string }
@@ -148,18 +166,21 @@ export type Database = {
       }
       company_details: {
         Row: {
+          business_size: string
           cnpj: string
           legal_name: string
           user_id: string
           website: string
         }
         Insert: {
+          business_size?: string
           cnpj: string
           legal_name: string
           user_id: string
           website?: string
         }
         Update: {
+          business_size?: string
           cnpj?: string
           legal_name?: string
           user_id?: string
@@ -472,7 +493,7 @@ export type Database = {
       update_job_application_status: { Args: { _application_id: string; _status: string }; Returns: undefined }
     }
     Enums: {
-      app_role: "company" | "professor" | "visitor" | "admin"
+      app_role: "company" | "professor" | "visitor" | "admin" | "naf"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -600,7 +621,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["company", "professor", "visitor", "admin"],
+      app_role: ["company", "professor", "visitor", "admin", "naf"],
     },
   },
 } as const
