@@ -1,12 +1,12 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { CheckCircle2, Clock, MapPin, Video } from "lucide-react";
+import { Clock, MapPin, Video } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { useSession } from "@/hooks/use-session";
 import { formatEventDate } from "@/lib/jobs";
 import { storeAuthReturn } from "@/lib/auth-return";
-import { getMyEventInterestIds, getMyRole, registerForEvent } from "@/services/api";
+import { cancelEventRegistration, getMyEventInterestIds, getMyRole, registerForEvent } from "@/services/api";
 import type { CareerEvent } from "@/types";
 
 function DateBlock({ iso }: { iso: string }) {
@@ -61,6 +61,17 @@ export function useEventInterest() {
     },
     onError: (error) => toast.error(error instanceof Error ? error.message : "Não foi possível confirmar sua inscrição."),
   });
+  const cancellation = useMutation({
+    mutationFn: cancelEventRegistration,
+    onSuccess: async () => {
+      toast.success("Inscrição no evento cancelada.");
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["my-event-interests"] }),
+        queryClient.invalidateQueries({ queryKey: ["my-event-registrations"] }),
+      ]);
+    },
+    onError: (error) => toast.error(error instanceof Error ? error.message : "Não foi possível cancelar sua inscrição."),
+  });
   const mark = (e: CareerEvent) => {
     if (!ready) return;
     if (!session) {
@@ -81,10 +92,10 @@ export function useEventInterest() {
     }
     registration.mutate(e.id);
   };
-  return { interested: interests.data ?? [], mark, registering: registration.isPending ? registration.variables : null };
+  return { interested: interests.data ?? [], mark, cancel: (eventId: string) => cancellation.mutate(eventId), registering: registration.isPending ? registration.variables : null, cancelling: cancellation.isPending ? cancellation.variables : null };
 }
 
-export function EventCard({ event, interested, onInterest, registering = false }: { event: CareerEvent; interested: boolean; onInterest: () => void; registering?: boolean }) {
+export function EventCard({ event, interested, onInterest, onCancel, registering = false, cancelling = false }: { event: CareerEvent; interested: boolean; onInterest: () => void; onCancel: () => void; registering?: boolean; cancelling?: boolean }) {
   const d = formatEventDate(event.date);
   return (
     <article className="flex h-full flex-col rounded-xl border bg-card p-5 shadow-card">
@@ -106,9 +117,7 @@ export function EventCard({ event, interested, onInterest, registering = false }
         <Button asChild variant="outline">
           <Link to="/eventos/$id" params={{ id: event.id }}>Ver detalhes</Link>
         </Button>
-        <Button onClick={onInterest} disabled={interested || registering} variant={interested ? "secondary" : "default"}>
-          {interested ? (<><CheckCircle2 className="h-4 w-4" /> Inscrição confirmada</>) : registering ? "Inscrevendo…" : "Inscrever-se"}
-        </Button>
+        {interested ? <Button onClick={onCancel} disabled={cancelling} variant="outline">{cancelling ? "Cancelando…" : "Cancelar inscrição"}</Button> : <Button onClick={onInterest} disabled={registering}>{registering ? "Inscrevendo…" : "Inscrever-se"}</Button>}
       </div>
     </article>
   );

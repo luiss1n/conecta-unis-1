@@ -1,5 +1,5 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
-import { CalendarDays, CheckCircle2, ChevronRight, Clock, MapPin, Tag } from "lucide-react";
+import { CalendarDays, ChevronRight, Clock, MapPin, Tag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ReportPublicationButton } from "@/components/common/ReportPublicationButton";
 import { useEventInterest } from "@/components/events/EventCard";
@@ -28,7 +28,7 @@ export const Route = createFileRoute("/eventos/$id")({
 
 function EventPage() {
   const { event } = Route.useLoaderData();
-  const { interested, mark, registering } = useEventInterest();
+  const { interested, mark, cancel, registering, cancelling } = useEventInterest();
   const d = formatEventDate(event.date);
   const done = interested.includes(event.id);
   return (
@@ -51,9 +51,7 @@ function EventPage() {
         </ul>
         <p className="mt-6 leading-relaxed text-muted-foreground">{event.description}</p>
         <div className="mt-8 flex flex-wrap gap-3">
-          <Button size="lg" onClick={() => mark(event)} disabled={done || registering === event.id}>
-            {done ? (<><CheckCircle2 className="h-4 w-4" /> Inscrição confirmada</>) : registering === event.id ? "Inscrevendo…" : "Inscrever-se"}
-          </Button>
+          {done ? <Button size="lg" variant="outline" onClick={() => cancel(event.id)} disabled={cancelling === event.id}>{cancelling === event.id ? "Cancelando…" : "Cancelar inscrição"}</Button> : <Button size="lg" onClick={() => mark(event)} disabled={registering === event.id}>{registering === event.id ? "Inscrevendo…" : "Inscrever-se"}</Button>}
           <Button asChild size="lg" variant="outline"><Link to="/eventos">Outros eventos</Link></Button>
           <ReportPublicationButton kind="event" targetRef={event.id} />
         </div>

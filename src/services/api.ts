@@ -444,6 +444,16 @@ export async function registerForEvent(eventId: string): Promise<void> {
   if (error) throw new Error("Entre como aluno ou professor para se inscrever neste evento.");
 }
 
+export async function cancelEventRegistration(eventId: string): Promise<void> {
+  const user = await requireUser();
+  const { error } = await supabase
+    .from("event_interests")
+    .delete()
+    .eq("user_id", user.id)
+    .eq("event_id", eventId);
+  if (error) throwSupabaseError("Não foi possível cancelar sua inscrição no evento", error);
+}
+
 export async function getMyEventRegistrations() {
   const user = await requireUser();
   const { data, error } = await supabase

@@ -24,7 +24,7 @@ const cats: EventCategory[] = ["Workshop", "Feira", "Palestra", "Oficina"];
 
 function EventsPage() {
   const [sel, setSel] = useState<EventCategory[]>([]);
-  const { interested, mark, registering } = useEventInterest();
+  const { interested, mark, cancel, registering, cancelling } = useEventInterest();
   const { events } = Route.useLoaderData();
   const list = events.filter((e) => !sel.length || sel.includes(e.category));
   return (
@@ -40,7 +40,7 @@ function EventsPage() {
         ) : (
           <ul className="grid gap-4 md:grid-cols-2">
             {list.map((e) => (
-              <li key={e.id}><EventCard event={e} interested={interested.includes(e.id)} onInterest={() => mark(e)} registering={registering === e.id} /></li>
+              <li key={e.id}><EventCard event={e} interested={interested.includes(e.id)} onInterest={() => mark(e)} onCancel={() => cancel(e.id)} registering={registering === e.id} cancelling={cancelling === e.id} /></li>
             ))}
           </ul>
         )}

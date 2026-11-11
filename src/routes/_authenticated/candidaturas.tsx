@@ -1,11 +1,11 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { BriefcaseBusiness, CalendarDays, MessageCircle, UserRound } from "lucide-react";
 import type { ReactNode } from "react";
 import { PageHeader } from "@/components/common/PageHeader";
 import { Button } from "@/components/ui/button";
 import { ApplicationNextSteps } from "@/components/jobs/ApplicationNextSteps";
-import { closeJob, getMyAlertPreferences, getMyApplications, getMyEventRegistrations, getMyProfile, getMyPublishedJobs, getMyRole, getMySavedJobSlugs, getReceivedApplications, type ApplicationListItem } from "@/services/api";
+import { cancelEventRegistration, closeJob, getMyAlertPreferences, getMyApplications, getMyEventRegistrations, getMyProfile, getMyPublishedJobs, getMyRole, getMySavedJobSlugs, getReceivedApplications, type ApplicationListItem } from "@/services/api";
 import { toast } from "sonner";
 import { useMemo, useState } from "react";
 
@@ -34,6 +34,17 @@ function ApplicationsInbox() {
   const received = useQuery({ queryKey: ["received-applications"], queryFn: getReceivedApplications, enabled: canReceive, refetchInterval: 10000 });
   const sent = useQuery({ queryKey: ["my-applications"], queryFn: getMyApplications, enabled: canApply, refetchInterval: 10000 });
   const events = useQuery({ queryKey: ["my-event-registrations"], queryFn: getMyEventRegistrations, enabled: canApply });
+  const cancelEvent = useMutation({
+    mutationFn: cancelEventRegistration,
+    onSuccess: async () => {
+      toast.success("Inscrição no evento cancelada.");
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ["my-event-interests"] }),
+        qc.invalidateQueries({ queryKey: ["my-event-registrations"] }),
+      ]);
+    },
+    onError: (error) => toast.error(error instanceof Error ? error.message : "Não foi possível cancelar sua inscrição."),
+  });
   const studentProfile = useQuery({ queryKey: ["my-profile"], queryFn: getMyProfile, enabled: role === "visitor" });
   const alertPreferences = useQuery({ queryKey: ["my-job-alert-preferences"], queryFn: getMyAlertPreferences, enabled: role === "visitor" });
   const savedJobs = useQuery({ queryKey: ["my-saved-job-slugs"], queryFn: getMySavedJobSlugs, enabled: role === "visitor" });
@@ -74,11 +85,12 @@ function ApplicationsInbox() {
               <ul className="divide-y rounded-xl border bg-card">
                 {events.data.map(({ event, registration }) => (
                   <li key={registration.event_id}>
-                    <Link to="/eventos/$id" params={{ id: event.id }} className="flex items-center gap-3 p-4 hover:bg-muted/50 focus-visible:outline-2 focus-visible:outline-ring">
+                    <div className="flex flex-wrap items-center gap-3 p-4">
                       <CalendarDays className="h-5 w-5 shrink-0 text-primary" />
-                      <span className="min-w-0 flex-1"><span className="block truncate font-semibold">{event.title}</span><span className="text-sm text-muted-foreground">Inscrição confirmada</span></span>
+                      <Link to="/eventos/$id" params={{ id: event.id }} className="min-w-0 flex-1 hover:text-primary focus-visible:outline-2 focus-visible:outline-ring"><span className="block truncate font-semibold">{event.title}</span><span className="text-sm text-muted-foreground">Inscrição confirmada</span></Link>
                       <span className="text-xs text-muted-foreground">{new Date(registration.created_at).toLocaleDateString("pt-BR")}</span>
-                    </Link>
+                      <Button size="sm" variant="outline" disabled={cancelEvent.isPending && cancelEvent.variables === event.id} onClick={() => cancelEvent.mutate(event.id)}>{cancelEvent.isPending && cancelEvent.variables === event.id ? "Cancelando…" : "Cancelar inscrição"}</Button>
+                    </div>
                   </li>
                 ))}
               </ul>
