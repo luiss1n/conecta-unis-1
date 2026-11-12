@@ -1,4 +1,5 @@
 DROP POLICY IF EXISTS jobs_insert_own ON public.jobs;
+DROP POLICY IF EXISTS jobs_professor_insert_own ON public.jobs;
 CREATE POLICY jobs_insert_own ON public.jobs
 FOR INSERT TO authenticated
 WITH CHECK (
@@ -15,6 +16,8 @@ WITH CHECK (
     OR (
       public.has_role(auth.uid(), 'professor')
       AND "companySlug" IS NULL
+      AND publisher_name IS NOT NULL
+      AND char_length(trim(publisher_name)) BETWEEN 2 AND 150
     )
   )
 );

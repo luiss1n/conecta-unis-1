@@ -914,12 +914,21 @@ function eventPayload(values: NewEventValues) {
 
 export async function createEvent(values: NewEventValues) {
   const user = await requireUser();
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("events")
     .insert({ owner_id: user.id, ...eventPayload(values) })
     .select("id")
     .single();
   if (error) throwSupabaseError("Não foi possível confirmar a publicação do evento", error);
+  if (!data?.id) throw new Error("O banco não confirmou a criação do evento. Atualize a página e confira antes de tentar novamente.");
+  const { data: visibleEvent, error: visibilityError } = await supabase
+    .from("events")
+    .select("id")
+    .eq("id", data.id)
+    .maybeSingle();
+  if (visibilityError || !visibleEvent) {
+    throw new Error("O evento foi gravado, mas não está visível. Confira se a migração de visibilidade de eventos (0017) foi aplicada no Supabase.");
+  }
 }
 
 export interface AdminJobValues extends NewJobValues {
