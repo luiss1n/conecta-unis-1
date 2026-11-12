@@ -189,10 +189,11 @@ export async function markAllNotificationsRead(): Promise<void> {
 
 export async function deleteNotification(id: string): Promise<void> {
   const user = await requireUser();
-  const { data, error } = await supabase.from("notifications").delete().eq("id", id).eq("recipient_id", user.id).select("id");
+  // A notification may already be gone (for example, after a stale UI action).
+  // DELETE is intentionally idempotent: an empty RETURNING result is not a DB error.
+  const { error } = await supabase.from("notifications").delete().eq("id", id).eq("recipient_id", user.id);
   if (error?.code === "42501") throw new Error("A exclusão de notificações ainda não foi habilitada no banco. Aplique a migração 0022.");
   if (error) throwSupabaseError("Não foi possível remover a notificação", error);
-  if (!data?.length) throw new Error("A notificação não foi removida. Confira se a migração 0022 foi aplicada ao banco.");
 }
 
 export async function submitPublicationReport(
