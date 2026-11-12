@@ -413,7 +413,10 @@ export async function getEvents(opts: { upcomingOnly?: boolean } = {}): Promise<
   if (opts.upcomingOnly) q = q.gte("date", new Date().toISOString());
   const { data, error } = await q;
   if (error) throw error;
-  return (data ?? []).map(toEvent);
+  // The RLS policy already excludes moderated events for public users. Keep
+  // the client filter as a second guard and consistently omit hidden events
+  // from public lists (the admin panel uses its dedicated query path).
+  return (data ?? []).filter((event) => !event.is_hidden).map(toEvent);
 }
 
 export async function getEvent(id: string): Promise<CareerEvent | undefined> {
