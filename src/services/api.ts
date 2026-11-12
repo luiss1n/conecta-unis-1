@@ -51,6 +51,16 @@ function throwSupabaseError(
     details: error.details,
     hint: error.hint,
   });
+  if (error.code === "42501") {
+    throw new Error(
+      `${context}: o Supabase bloqueou a publicação por falta de permissão. Para professores, confirme que as migrations 0027 e 0029 foram aplicadas no banco. Se já foram, saia da conta e entre novamente para renovar a sessão. (referência ${reference})`,
+    );
+  }
+  if (error.code === "42703" || error.code === "PGRST204" || error.code === "PGRST205") {
+    throw new Error(
+      `${context}: o banco está com o esquema desatualizado. Aplique as migrations pendentes do projeto no Supabase e tente novamente. (referência ${reference})`,
+    );
+  }
   throw new Error(`${context} (referência ${reference}). Atualize a página e tente novamente.`);
 }
 

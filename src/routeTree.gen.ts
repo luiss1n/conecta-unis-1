@@ -21,6 +21,7 @@ import { Route as AuthenticatedAlertasRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedCadastroRouteImport } from './routes/_authenticated/cadastro'
 import { Route as AuthenticatedCalendarioRouteImport } from './routes/_authenticated/calendario'
 import { Route as AuthenticatedCandidaturasRouteImport } from './routes/_authenticated/candidaturas'
+import { Route as AuthenticatedNafRouteImport } from './routes/_authenticated/naf'
 import { Route as AuthenticatedPerfilRouteImport } from './routes/_authenticated/perfil'
 import { Route as AuthenticatedPublicarRouteImport } from './routes/_authenticated/publicar'
 import { Route as AuthenticatedVagasSalvasRouteImport } from './routes/_authenticated/vagas-salvas'
@@ -93,6 +94,11 @@ const AuthenticatedCandidaturasRoute =
     path: '/candidaturas',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedNafRoute = AuthenticatedNafRouteImport.update({
+  id: '/naf',
+  path: '/naf',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedPerfilRoute = AuthenticatedPerfilRouteImport.update({
   id: '/perfil',
   path: '/perfil',
@@ -164,6 +170,7 @@ export interface FileRoutesByFullPath {
   '/cadastro': typeof AuthenticatedCadastroRoute
   '/calendario': typeof AuthenticatedCalendarioRoute
   '/candidaturas': typeof AuthenticatedCandidaturasRoute
+  '/naf': typeof AuthenticatedNafRoute
   '/perfil': typeof AuthenticatedPerfilRoute
   '/publicar': typeof AuthenticatedPublicarRoute
   '/vagas-salvas': typeof AuthenticatedVagasSalvasRoute
@@ -188,6 +195,7 @@ export interface FileRoutesByTo {
   '/cadastro': typeof AuthenticatedCadastroRoute
   '/calendario': typeof AuthenticatedCalendarioRoute
   '/candidaturas': typeof AuthenticatedCandidaturasRoute
+  '/naf': typeof AuthenticatedNafRoute
   '/perfil': typeof AuthenticatedPerfilRoute
   '/publicar': typeof AuthenticatedPublicarRoute
   '/vagas-salvas': typeof AuthenticatedVagasSalvasRoute
@@ -214,6 +222,7 @@ export interface FileRoutesById {
   '/_authenticated/cadastro': typeof AuthenticatedCadastroRoute
   '/_authenticated/calendario': typeof AuthenticatedCalendarioRoute
   '/_authenticated/candidaturas': typeof AuthenticatedCandidaturasRoute
+  '/_authenticated/naf': typeof AuthenticatedNafRoute
   '/_authenticated/perfil': typeof AuthenticatedPerfilRoute
   '/_authenticated/publicar': typeof AuthenticatedPublicarRoute
   '/_authenticated/vagas-salvas': typeof AuthenticatedVagasSalvasRoute
@@ -240,6 +249,7 @@ export interface FileRouteTypes {
     | '/cadastro'
     | '/calendario'
     | '/candidaturas'
+    | '/naf'
     | '/perfil'
     | '/publicar'
     | '/vagas-salvas'
@@ -264,6 +274,7 @@ export interface FileRouteTypes {
     | '/cadastro'
     | '/calendario'
     | '/candidaturas'
+    | '/naf'
     | '/perfil'
     | '/publicar'
     | '/vagas-salvas'
@@ -289,6 +300,7 @@ export interface FileRouteTypes {
     | '/_authenticated/cadastro'
     | '/_authenticated/calendario'
     | '/_authenticated/candidaturas'
+    | '/_authenticated/naf'
     | '/_authenticated/perfil'
     | '/_authenticated/publicar'
     | '/_authenticated/vagas-salvas'
@@ -404,6 +416,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedCandidaturasRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/naf': {
+      id: '/_authenticated/naf'
+      path: '/naf'
+      fullPath: '/naf'
+      preLoaderRoute: typeof AuthenticatedNafRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/perfil': {
       id: '/_authenticated/perfil'
       path: '/perfil'
@@ -490,6 +509,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedCadastroRoute: typeof AuthenticatedCadastroRoute
   AuthenticatedCalendarioRoute: typeof AuthenticatedCalendarioRoute
   AuthenticatedCandidaturasRoute: typeof AuthenticatedCandidaturasRoute
+  AuthenticatedNafRoute: typeof AuthenticatedNafRoute
   AuthenticatedPerfilRoute: typeof AuthenticatedPerfilRoute
   AuthenticatedPublicarRoute: typeof AuthenticatedPublicarRoute
   AuthenticatedVagasSalvasRoute: typeof AuthenticatedVagasSalvasRoute
@@ -503,6 +523,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedCadastroRoute: AuthenticatedCadastroRoute,
   AuthenticatedCalendarioRoute: AuthenticatedCalendarioRoute,
   AuthenticatedCandidaturasRoute: AuthenticatedCandidaturasRoute,
+  AuthenticatedNafRoute: AuthenticatedNafRoute,
   AuthenticatedPerfilRoute: AuthenticatedPerfilRoute,
   AuthenticatedPublicarRoute: AuthenticatedPublicarRoute,
   AuthenticatedVagasSalvasRoute: AuthenticatedVagasSalvasRoute,
