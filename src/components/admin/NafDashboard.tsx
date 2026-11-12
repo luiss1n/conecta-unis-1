@@ -23,7 +23,7 @@ export function NafDashboard() {
         <select className="h-11 rounded-md border bg-background px-3" value={days} onChange={(event) => setDays(Number(event.target.value) as 1 | 7 | 30)}>{periods.map((period) => <option key={period.days} value={period.days}>{period.label}</option>)}</select>
       </label>
     </div>
-    {report.isLoading ? <p>Carregando relatório…</p> : report.isError ? <p role="alert" className="text-destructive">Não foi possível carregar o relatório. Confira se a migração do NAF foi aplicada ao banco.</p> : <>
+    {report.isLoading ? <p>Carregando relatório…</p> : report.isError ? <p role="alert" className="text-destructive">Não foi possível carregar o relatório agora. Tente novamente. Se o problema continuar, fale com um administrador.</p> : <>
       <ul className="grid gap-3 sm:grid-cols-3">
         {[{ label: "Vagas no sistema", value: data.jobs.length }, { label: "Visualizações no período", value: views }, { label: "Candidaturas no período", value: applications }].map((item) => <li key={item.label} className="rounded-xl border bg-card p-4"><p className="font-display text-3xl font-bold">{item.value}</p><p className="text-sm text-muted-foreground">{item.label}</p></li>)}
       </ul>

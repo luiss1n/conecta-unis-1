@@ -51,17 +51,7 @@ function throwSupabaseError(
     details: error.details,
     hint: error.hint,
   });
-  if (error.code === "42501") {
-    throw new Error(
-      `${context}: o Supabase bloqueou a publicação por falta de permissão. Para professores, confirme que as migrations 0027 e 0029 foram aplicadas no banco. Se já foram, saia da conta e entre novamente para renovar a sessão. (referência ${reference})`,
-    );
-  }
-  if (error.code === "42703" || error.code === "PGRST204" || error.code === "PGRST205") {
-    throw new Error(
-      `${context}: o banco está com o esquema desatualizado. Aplique as migrations pendentes do projeto no Supabase e tente novamente. (referência ${reference})`,
-    );
-  }
-  throw new Error(`${context} (referência ${reference}). Atualize a página e tente novamente.`);
+  throw new Error(`${context}. Tente novamente. Se o problema continuar, fale com um administrador.`);
 }
 
 export async function getApplicationCandidateProfile(
@@ -192,7 +182,6 @@ export async function deleteNotification(id: string): Promise<void> {
   // A notification may already be gone (for example, after a stale UI action).
   // DELETE is intentionally idempotent: an empty RETURNING result is not a DB error.
   const { error } = await supabase.from("notifications").delete().eq("id", id).eq("recipient_id", user.id);
-  if (error?.code === "42501") throw new Error("A exclusão de notificações ainda não foi habilitada no banco. Aplique a migração 0022.");
   if (error) throwSupabaseError("Não foi possível remover a notificação", error);
 }
 
@@ -931,14 +920,14 @@ export async function createEvent(values: NewEventValues) {
     .select("id")
     .single();
   if (error) throwSupabaseError("Não foi possível confirmar a publicação do evento", error);
-  if (!data?.id) throw new Error("O banco não confirmou a criação do evento. Atualize a página e confira antes de tentar novamente.");
+  if (!data?.id) throw new Error("Não foi possível confirmar a publicação do evento. Atualize a página antes de tentar novamente para verificar se ele já foi criado. Se o problema continuar, fale com um administrador.");
   const { data: visibleEvent, error: visibilityError } = await supabase
     .from("events")
     .select("id")
     .eq("id", data.id)
     .maybeSingle();
   if (visibilityError || !visibleEvent) {
-    throw new Error("O evento foi gravado, mas não está visível. Confira se a migração de visibilidade de eventos (0017) foi aplicada no Supabase.");
+    throw new Error("Não foi possível confirmar a publicação do evento. Atualize a página antes de tentar novamente para verificar se ele já foi criado. Se o problema continuar, fale com um administrador.");
   }
 }
 

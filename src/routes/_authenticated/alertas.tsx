@@ -59,11 +59,11 @@ function AlertsForm({ userId, isStudent, preferences, notifications, cities }: {
         isStudent ? supabase.from("student_job_alert_preferences").upsert({ user_id: userId, categories: selectedCategories, cities: selectedCities, enabled }, { onConflict: "user_id" }) : Promise.resolve({ error: null }),
         supabase.from("notification_preferences").upsert({ user_id: userId, ...notificationTypes, updated_at: new Date().toISOString() }, { onConflict: "user_id" }),
       ]);
-      if (jobResult.error || notificationResult.error) return void toast.error("Não foi possível salvar suas preferências. Verifique se a migration foi aplicada.");
+      if (jobResult.error || notificationResult.error) return void toast.error("Não foi possível salvar suas preferências agora. Tente novamente. Se o problema continuar, fale com um administrador.");
       await queryClient.invalidateQueries({ queryKey: ["job-alert-preferences"] });
       toast.success("Preferências de alerta salvas.");
     } catch {
-      toast.error("Não foi possível salvar suas preferências. Verifique sua conexão e tente novamente.");
+      toast.error("Não foi possível salvar suas preferências agora. Tente novamente. Se o problema continuar, fale com um administrador.");
     } finally {
       setSaving(false);
     }
@@ -81,7 +81,7 @@ function AlertsForm({ userId, isStudent, preferences, notifications, cities }: {
       <h2 className="font-bold">Cidades para buscar</h2>
       <p className="mt-1 text-sm text-muted-foreground">Escolha uma ou mais cidades. As vagas num raio de até 20 km das cidades selecionadas também serão consideradas.</p>
       <div className="mt-4 grid max-h-80 gap-2 overflow-y-auto sm:grid-cols-2">
-        {cities.length === 0 ? <p className="rounded-md border border-warning/30 bg-warning-soft p-3 text-sm">A lista regional ainda não foi carregada. Seus alertas poderão ser configurados assim que a migração com as cidades for concluída.</p> : cities.map(({ city, is_sre_caxambu }) => <label key={city} className="flex min-h-11 items-center gap-3 rounded-md border px-3 py-2 text-sm"><input type="checkbox" checked={selectedCities.includes(city)} onChange={() => toggle(city, selectedCities, setSelectedCities)} /><span>{city}<span className="ml-1 text-xs text-muted-foreground">{is_sre_caxambu ? "SRE Caxambu" : "até 20 km"}</span></span></label>)}
+        {cities.length === 0 ? <p className="rounded-md border p-3 text-sm text-muted-foreground">A seleção de cidades está indisponível no momento.</p> : cities.map(({ city, is_sre_caxambu }) => <label key={city} className="flex min-h-11 items-center gap-3 rounded-md border px-3 py-2 text-sm"><input type="checkbox" checked={selectedCities.includes(city)} onChange={() => toggle(city, selectedCities, setSelectedCities)} /><span>{city}<span className="ml-1 text-xs text-muted-foreground">{is_sre_caxambu ? "SRE Caxambu" : "até 20 km"}</span></span></label>)}
       </div>
     </section>}
     {isStudent && <label className="flex min-h-11 items-center gap-3 text-sm"><input type="checkbox" checked={enabled} onChange={(event) => setEnabled(event.target.checked)} />Receber notificações de novas vagas correspondentes</label>}
@@ -99,7 +99,7 @@ function JobAlertsPage() {
   return <>
     <PageHeader eyebrow="Preferências da conta" title="Alertas e notificações" description="Escolha quais avisos você quer receber da plataforma." />
     <div className="container-page max-w-3xl py-8">
-      {isLoading ? <p className="text-sm text-muted-foreground">Carregando preferências…</p> : isError || !data ? <div role="alert" className="rounded-lg border p-5"><p>Não foi possível carregar as preferências. Confira se as migrations de alertas já foram aplicadas no Supabase.</p></div> : <AlertsForm key={data.userId} userId={data.userId} isStudent={data.isStudent} preferences={data.preferences} notifications={data.notifications} cities={data.cities} />}
+      {isLoading ? <p className="text-sm text-muted-foreground">Carregando preferências…</p> : isError || !data ? <div role="alert" className="rounded-lg border p-5"><p>Não foi possível carregar suas preferências agora. Tente novamente. Se o problema continuar, fale com um administrador.</p></div> : <AlertsForm key={data.userId} userId={data.userId} isStudent={data.isStudent} preferences={data.preferences} notifications={data.notifications} cities={data.cities} />}
     </div>
   </>;
 }

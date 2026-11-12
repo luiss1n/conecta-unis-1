@@ -157,13 +157,13 @@ function AuthPage() {
       if (error) {
         const message = error.message.toLowerCase();
         if (/provider is not enabled|unsupported provider/.test(message)) {
-          setAuthError("O acesso com Google ainda não está ativado no Supabase. É preciso habilitar o provedor Google e cadastrar as credenciais OAuth.");
+          setAuthError("Não foi possível entrar com o Google agora. Tente novamente ou use seu e-mail e senha. Se o problema continuar, fale com um administrador.");
         } else {
           setAuthError("Não foi possível iniciar o acesso com Google. Tente novamente ou entre com e-mail e senha.");
         }
       }
     } catch {
-      setAuthError("Não foi possível conectar ao Supabase. Verifique a configuração de autenticação e tente novamente.");
+      setAuthError("Não foi possível conectar agora. Verifique sua conexão e tente novamente. Se o problema continuar, fale com um administrador.");
     } finally {
       setGoogleBusy(false);
     }
