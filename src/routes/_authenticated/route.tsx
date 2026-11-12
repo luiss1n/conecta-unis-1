@@ -4,8 +4,10 @@ import { supabase } from "@/integrations/supabase/client";
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
   beforeLoad: async () => {
-    const { data } = await supabase.auth.getUser();
-    if (!data.user) throw redirect({ to: "/auth" });
+    // Use the restored browser session instead of validating it with a
+    // Supabase network request on every authenticated route transition.
+    const { data, error } = await supabase.auth.getSession();
+    if (error || !data.session) throw redirect({ to: "/auth" });
   },
   component: () => <Outlet />,
 });

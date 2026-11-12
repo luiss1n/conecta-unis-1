@@ -9,6 +9,7 @@ export function brokeredPreviewStorage() {
         ?? host.match(new RegExp('^(' + UUID + ')(?=[.-])', 'i'))?.[1])
     : undefined;
   const framed = window.parent && window.parent !== window;
+  // The broker is only needed when the preview is embedded in its editor.
   if (!projectId || !framed) return localStorage;
   const dev = host.endsWith('.lovableproject-dev.com') || host.endsWith('.gpt-eng.com');
   const EDITOR = dev
@@ -19,7 +20,7 @@ export function brokeredPreviewStorage() {
     ? [ancestor]
     : (dev ? ['https://lovable.dev', 'http://localhost:3000'] : ['https://lovable.dev']);
   const RESULT = 'lovable-preview-auth:result';
-  const TIMEOUT = 2000;
+  const TIMEOUT = 500;
   const newId = () => Math.random().toString(36).slice(2) + Date.now().toString(36);
 
   const request = (type: string, key: string, value?: string): Promise<{ ok: boolean; value?: string | null } | null> =>
@@ -45,19 +46,26 @@ export function brokeredPreviewStorage() {
       for (const origin of editorOrigins) window.parent.postMessage(msg, origin);
       timer = setTimeout(() => finish(null), TIMEOUT);
     });
-  let firstGet = true;
-  const RETRY_DELAY = 250;
   const readLocal = (key: string) => { try { return localStorage.getItem(key); } catch { return undefined; } };
 
   return {
     getItem: async (key: string) => {
       const local = readLocal(key);
-      let res = await request('lovable-preview-auth:get', key, local ?? undefined);
-      if (!res && firstGet) {
-        await new Promise((r) => setTimeout(r, RETRY_DELAY));
-        res = await request('lovable-preview-auth:get', key, local ?? undefined);
+      // Prefer an existing local session immediately. The editor copy is
+      // reconciled in the background, so it cannot hold up navigation.
+      if (local !== null && local !== undefined) {
+        void request('lovable-preview-auth:get', key, local).then((res) => {
+          if (!res || !res.ok || typeof res.value !== 'string') return;
+          if (res.value === '') {
+            if (readLocal(key) === local) localStorage.removeItem(key);
+          } else if (readLocal(key) === local) {
+            localStorage.setItem(key, res.value);
+          }
+        });
+        return local;
       }
-      firstGet = false;
+
+      const res = await request('lovable-preview-auth:get', key);
       if (res && res.ok && typeof res.value === 'string') {
         if (res.value === '') {
           if (local !== undefined && readLocal(key) === local) localStorage.removeItem(key);
