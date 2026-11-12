@@ -31,14 +31,14 @@ function accountNav(role: string | null | undefined) {
       { to: "/publicar" as const, label: "Publicar vaga" },
       { to: "/candidaturas" as const, label: "Candidaturas" },
       { to: "/calendario" as const, label: "Calendário" },
-      { to: "/alertas" as const, label: "Atendimento NAF" },
+      { to: "/naf" as const, label: "Atendimento NAF" },
     ];
   }
   if (role === "visitor") {
     return [
       { to: "/candidaturas" as const, label: "Minhas candidaturas" },
       { to: "/vagas-salvas" as const, label: "Vagas salvas" },
-      { to: "/alertas" as const, label: "Alertas e NAF" },
+      { to: "/naf" as const, label: "Atendimento NAF" },
       { to: "/calendario" as const, label: "Calendário" },
     ];
   }

@@ -59,7 +59,16 @@ function AuthPage() {
   const { session } = useSession();
 
   useEffect(() => {
-    if (session) window.location.replace(consumeAuthReturn() ?? "/cadastro");
+    if (!session) return;
+    const returnTo = consumeAuthReturn();
+    if (returnTo) {
+      window.location.replace(returnTo);
+      return;
+    }
+    void (async () => {
+      const { data, error } = await supabase.from("user_roles").select("role").eq("user_id", session.user.id).maybeSingle();
+      window.location.replace(!error && data?.role ? "/" : "/cadastro");
+    })();
   }, [session]);
 
   function changeMode(next: Mode) {
