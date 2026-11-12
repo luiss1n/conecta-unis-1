@@ -111,7 +111,7 @@ function AuthPage() {
           redirectTo: `${window.location.origin}/reset-password`,
         });
         if (error) throw error;
-        setSent("Enviamos um link para redefinir sua senha.");
+        setSent("Enviamos um link para definir ou redefinir sua senha do CONECTA UNIS. Se você entra com Google, use esse link para criar uma senha própria para entrar com e-mail e senha.");
         return;
       }
 

@@ -43,7 +43,7 @@ export function NafSupport({ staff = false }: { staff?: boolean }) {
   function showError(error: unknown) {
     const code = typeof error === "object" && error && "code" in error ? String(error.code) : "";
     const message = code === "42501" || code === "PGRST205" || code === "42P01"
-      ? "O atendimento do NAF ainda não está habilitado no banco. Aplique as migrações 0023 e 0024."
+      ? "O atendimento do NAF ainda não está habilitado para este perfil no banco. Aplique a migração 0028."
       : error && typeof error === "object" && "message" in error ? String(error.message) : "Não foi possível concluir o atendimento.";
     setInlineError(message);
     toast.error(message);

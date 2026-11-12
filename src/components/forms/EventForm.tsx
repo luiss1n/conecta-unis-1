@@ -28,6 +28,7 @@ export function EventForm({ initial, admin = false, submitLabel, savingLabel = "
   const [draftReady, setDraftReady] = useState(false);
   const [draftStatus, setDraftStatus] = useState("Carregando rascunho da conta…");
   const submitSucceeded = useRef(false);
+  const edited = useRef(false);
   const isEditing = !!initial;
   const [form, setForm] = useState({
     title: initial?.title ?? "",
@@ -44,7 +45,17 @@ export function EventForm({ initial, admin = false, submitLabel, savingLabel = "
     let active = true;
     void getPublicationDraft<typeof form>("event").then((draft) => {
       if (!active) return;
-      if (draft?.payload) setForm((current) => ({ ...current, ...draft.payload }));
+      if (draft?.payload && !edited.current) {
+        const payload = draft.payload;
+        setForm((current) => ({
+          ...current,
+          ...payload,
+          // Older drafts may contain empty/non-string date values. Keep the
+          // controlled inputs stable and validate against their actual values.
+          date: typeof payload.date === "string" ? payload.date : current.date,
+          endTime: typeof payload.endTime === "string" ? payload.endTime : current.endTime,
+        }));
+      }
       setDraftStatus(draft?.updated_at ? `Rascunho sincronizado em ${new Date(draft.updated_at).toLocaleString("pt-BR")}` : "Rascunho sincronizado com sua conta");
       setDraftReady(true);
     }).catch(() => { if (active) { setDraftStatus("Rascunho indisponível; você ainda pode preencher e publicar."); setDraftReady(true); } });
@@ -58,12 +69,20 @@ export function EventForm({ initial, admin = false, submitLabel, savingLabel = "
     return () => window.clearTimeout(timer);
   }, [admin, draftReady, form, isEditing]);
   const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
-    setForm((f) => ({ ...f, [k]: e.target.value }));
+    {
+      edited.current = true;
+      setForm((f) => ({ ...f, [k]: e.target.value }));
+    };
+
+  const isValidDateTime = (value: string) => {
+    const date = new Date(value);
+    return value.trim().length > 0 && Number.isFinite(date.getTime());
+  };
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     if (form.title.trim().length < 3) { toast.error("Informe um título com pelo menos 3 caracteres."); return; }
-    if (!form.date || !form.endTime || form.location.trim().length < 2 || form.summary.trim().length < 3 || form.description.trim().length < 3) {
+    if (!isValidDateTime(form.date) || !/^([01]\d|2[0-3]):[0-5]\d$/.test(form.endTime) || form.location.trim().length < 2 || form.summary.trim().length < 3 || form.description.trim().length < 3) {
       toast.error("Preencha data, horário, local, resumo e descrição."); return;
     }
     setSaving(true);
